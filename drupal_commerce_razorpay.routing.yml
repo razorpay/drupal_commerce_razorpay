@@ -1,0 +1,8 @@
+drupal_commerce_razorpay.capturePayment:
+  path: '/capturePayment'
+  defaults:
+    _controller: '\Drupal\drupal_commerce_razorpay\Controller\RzpController::capturePayment'
+  requirements:
+    _access: 'TRUE'
+      #@TODO to be changed later.
+      # Needs to be accessed by an anonymous user.
