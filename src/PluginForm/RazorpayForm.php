@@ -16,14 +16,15 @@ class RazorpayForm extends BasePaymentOffsiteForm
     /**
      * {@inheritdoc}
      */
-    public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    public function buildConfigurationForm(array $form, FormStateInterface $form_state)
+    {
         $form = parent::buildConfigurationForm($form, $form_state);
 
         return $this->buildRedirectForm($form, $form_state,'',[],self::REDIRECT_POST);
     }
 
-    protected function buildRedirectForm(array $form, FormStateInterface $form_state, $redirect_url, array $data, $redirect_method = self::REDIRECT_GET) {
-
+    protected function buildRedirectForm(array $form, FormStateInterface $form_state, $redirect_url, array $data, $redirect_method = self::REDIRECT_GET)
+    {
         return $form;
     }
 }

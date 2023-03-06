@@ -18,11 +18,16 @@ class RzpController extends ControllerBase
 {
     public function capturePayment()
     {
-      $url =  Url::fromRoute('commerce_payment.checkout.return', [
-      'commerce_order' => '1',
-      'step' => 'payment',
-        ], ['absolute' => TRUE])->toString();
-      return new RedirectResponse($url);
-  }
+        $url =  Url::fromRoute('commerce_payment.checkout.return',
+            [
+                'commerce_order' => '1',
+                'step' => 'payment',
+            ],
+            [
+                'absolute' => TRUE
+            ]
+        )->toString();
 
+        return new RedirectResponse($url);
+    }
 }

@@ -20,7 +20,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Razorpay\Api\Api;
 
-
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
  *
@@ -38,19 +37,20 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
     /**
      * {@inheritdoc}
      */
-    public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-      return new static(
-        $configuration,
-        $plugin_id,
-        $plugin_definition,
-        $container->get('entity_type.manager'),
-        $container->get('plugin.manager.commerce_payment_type'),
-        $container->get('plugin.manager.commerce_payment_method_type'),
-        $container->get('datetime.time'),
-        $container->get('commerce_price.minor_units_converter'),
-        $container->get('event_dispatcher'),
-        $container->get('extension.list.module'),
-        $container->get('uuid')
-      );
+    public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition)
+    {
+        return new static(
+            $configuration,
+            $plugin_id,
+            $plugin_definition,
+            $container->get('entity_type.manager'),
+            $container->get('plugin.manager.commerce_payment_type'),
+            $container->get('plugin.manager.commerce_payment_method_type'),
+            $container->get('datetime.time'),
+            $container->get('commerce_price.minor_units_converter'),
+            $container->get('event_dispatcher'),
+            $container->get('extension.list.module'),
+            $container->get('uuid')
+        );
     }
 }
