@@ -113,7 +113,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             return;
         }
 
-
         try
         {
             $api = new Api($values['key_id'], $values['key_secret']);
