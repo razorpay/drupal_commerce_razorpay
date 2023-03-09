@@ -46,10 +46,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             $container->get('plugin.manager.commerce_payment_type'),
             $container->get('plugin.manager.commerce_payment_method_type'),
             $container->get('datetime.time'),
-            $container->get('commerce_price.minor_units_converter'),
-            $container->get('event_dispatcher'),
-            $container->get('extension.list.module'),
-            $container->get('uuid')
+            $container->get('commerce_price.minor_units_converter')
         );
     }
 
