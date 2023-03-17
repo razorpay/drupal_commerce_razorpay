@@ -6,6 +6,7 @@ use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGateway
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Razorpay\Api\Api;
+use Drupal\drupal_commerce_razorpay\AutoWebhook;
 
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
@@ -146,5 +147,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
         $this->configuration['key_id'] = $values['key_id'];
         $this->configuration['key_secret'] = $values['key_secret'];
         $this->configuration['payment_action'] = $values['payment_action'];
+
+        $autoWebhook = new AutoWebhook();
+        $autoWebhook->autoEnableWebhook($values['key_id'], $values['key_secret']);
     }
 }

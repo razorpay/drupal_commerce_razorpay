@@ -3,7 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\PluginForm;
 
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
-//use Drupal\commerce_order\Entity\Order;
+use Drupal\commerce_order\Entity\Order;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -137,7 +137,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
         return $form;
     }
-
+    
     /**
      * {@inheritdoc}
      */
@@ -148,6 +148,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
         $this->setPaymentAndConfig();
 
         $orderId = \Drupal::routeMatch()->getParameter('commerce_order')->id();
+
         $order = $this->payment->getOrder();
         $address = $order->getBillingProfile()->address->first();
         $currency = $this->payment->getAmount()->getCurrencyCode();
