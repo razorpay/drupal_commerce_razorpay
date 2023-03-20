@@ -190,7 +190,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
         // Attach library.
         $form['#attached']['library'][] = 'drupal_commerce_razorpay/drupal_commerce_razorpay.payment';
-        $form['#attached']['drupalSettings']['drupal_commerce_razorpay'] = $checkoutArgs;
+        $form['#attached']['drupalSettings']['razorpay_checkout_data'] = $checkoutArgs;
 
         return $form;
     }
