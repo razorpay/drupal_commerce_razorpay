@@ -7,7 +7,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Razorpay\Api\Api;
 use Drupal\drupal_commerce_razorpay\AutoWebhook;
-
+use Drupal\commerce_order\Entity\OrderInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Razorpay\Api\Errors\SignatureVerificationError;
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
  *
@@ -152,14 +154,14 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
         $autoWebhook->autoEnableWebhook($values['key_id'], $values['key_secret']);
     }
 
-    /**
+  /**
     * {@inheritdoc}
     */
     public function onReturn(OrderInterface $order, Request $request) 
     {
-        $key_id = $this->configuration['key_id'];
-        $key_secret = $this->configuration['key_secret'];
-        $api = new Api($key_id, $key_secret);
+        $keyId = $this->configuration['key_id'];
+        $keySecret = $this->configuration['key_secret'];
+        $api = new Api($keyId, $keySecret);
     
         //validate Rzp signature
         try
@@ -173,51 +175,51 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             $api->utility->verifyPaymentSignature($attributes);
 
             // Process payment and update order status
-            $payment = $api->order->fetch($order->getData('razorpay_order_id'));
-            $payment_object = $payment->payments();
+            $orderObject = $api->order->fetch($order->getData('razorpay_order_id'));
+            $paymentObject = $orderObject->payments();
 
-            $status = $payment_object['items'][0]->status; 
+            $status = $paymentObject['items'][0]->status; 
          
             $message = '';
-            $remote_status = '';
+            $remoteStatus = '';
 
-            $request_time = $this->time->getRequestTime();
+            $requestTime = $this->time->getRequestTime();
 
             if ($status == "captured")
             {
                 // Status is success.
-                $remote_status = t('Success');
+                $remoteStatus = t('Success');
 
-                $message = $this->t('Your payment was successful with Order id : @orderid has been received at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $request_time)]);
+                $message = $this->t('Your payment was successful with Order id : @orderid has been received at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
             
                 $status = "success";
             }
             elseif ($status == "authorized")
             {
                 // Batch process - Pending orders.
-                $remote_status = t('Pending');
-                $message = $this->t('Your payment with Order id : @orderid is pending at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $request_time)]);
+                $remoteStatus = t('Pending');
+                $message = $this->t('Your payment with Order id : @orderid is pending at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
                 $status = "pending";
             }
             elseif ($status == "failed")
             {
                 // Failed transaction.
-                $remote_status = t('Failure');
-                $message = $this->t('Your payment with Order id : @orderid failed at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $request_time)]);
+                $remoteStatus = t('Failure');
+                $message = $this->t('Your payment with Order id : @orderid failed at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
                 $status = "fail";
             }
       
-            $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
+            $paymentStorage = $this->entityTypeManager->getStorage('commerce_payment');
 
-            $payment = $payment_storage->create([
+            $payment = $paymentStorage->create([
                 'state' => $status,
                 'amount' => $order->getTotalPrice(),
                 'payment_gateway' => $this->entityId,
                 'order_id' => $order->id(),
                 'test' => $this->getMode() == 'test',
-                'remote_id' => $payment_object['items'][0]->id,
-                'remote_state' => $remote_status ? $remote_status : $request->get('payment_status'),
-                'authorized' => $request_time,
+                'remote_id' => $paymentObject['items'][0]->id,
+                'remote_state' => $remoteStatus ? $remoteStatus : $request->get('payment_status'),
+                'authorized' => $requestTime,
                 ]
             );
       
@@ -234,7 +236,5 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             \Drupal::logger('RazorpayCheckout')->error($e->getMessage());
           
         }
-        
-
     }
 }
