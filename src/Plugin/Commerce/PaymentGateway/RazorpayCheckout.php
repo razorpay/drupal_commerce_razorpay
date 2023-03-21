@@ -7,7 +7,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Razorpay\Api\Api;
 use Drupal\drupal_commerce_razorpay\AutoWebhook;
-
+use Drupal\commerce_order\Entity\OrderInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Razorpay\Api\Errors\SignatureVerificationError;
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
  *
@@ -150,5 +152,89 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
 
         $autoWebhook = new AutoWebhook();
         $autoWebhook->autoEnableWebhook($values['key_id'], $values['key_secret']);
+    }
+
+  /**
+    * {@inheritdoc}
+    */
+    public function onReturn(OrderInterface $order, Request $request) 
+    {
+        $keyId = $this->configuration['key_id'];
+        $keySecret = $this->configuration['key_secret'];
+        $api = new Api($keyId, $keySecret);
+    
+        //validate Rzp signature
+        try
+        {  
+            $attributes = array(
+            'razorpay_order_id' => $request->get('razorpay_order_id'),
+            'razorpay_payment_id' => $request->get('razorpay_payment_id'),
+            'razorpay_signature' => $request->get('razorpay_signature')
+             );
+        
+            $api->utility->verifyPaymentSignature($attributes);
+
+            // Process payment and update order status
+            $orderObject = $api->order->fetch($order->getData('razorpay_order_id'));
+            $paymentObject = $orderObject->payments();
+
+            $status = $paymentObject['items'][0]->status; 
+         
+            $message = '';
+            $remoteStatus = '';
+
+            $requestTime = $this->time->getRequestTime();
+
+            if ($status == "captured")
+            {
+                // Status is success.
+                $remoteStatus = t('Completed');
+
+                $message = $this->t('Your payment was successful with Order id : @orderid has been received at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
+            
+                $status = "completed";
+            }
+            elseif ($status == "authorized")
+            {
+                // Batch process - Pending orders.
+                $remoteStatus = t('Pending');
+                $message = $this->t('Your payment with Order id : @orderid is pending at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
+                $status = "pending";
+            }
+            elseif ($status == "failed")
+            {
+                // Failed transaction.
+                $remoteStatus = t('Failure');
+                $message = $this->t('Your payment with Order id : @orderid failed at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
+                $status = "fail";
+            }
+      
+            $paymentStorage = $this->entityTypeManager->getStorage('commerce_payment');
+
+            $payment = $paymentStorage->create([
+                'state' => $status,
+                'amount' => $order->getTotalPrice(),
+                'payment_gateway' => $this->entityId,
+                'order_id' => $order->id(),
+                'test' => $this->getMode() == 'test',
+                'remote_id' => $paymentObject['items'][0]->id,
+                'remote_state' => $remoteStatus ? $remoteStatus : $request->get('payment_status'),
+                'authorized' => $requestTime,
+                ]
+            );
+      
+            $payment->save();
+
+            \Drupal::messenger()->addMessage($message);
+
+        }
+        catch (SignatureVerificationError $e)
+        {
+            $message = "Your payment to Razorpay failed " . $e->getMessage();
+            $this->messenger()->addError($this->t($message));
+
+            \Drupal::logger('RazorpayCheckout')->error($e->getMessage());
+          
+        }
     }
 }
