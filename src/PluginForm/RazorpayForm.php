@@ -3,8 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\PluginForm;
 
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
-use Drupal\commerce_order\Entity\Order;
-use Drupal\Component\Serialization\Json;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Razorpay\Api\Api;
@@ -16,6 +15,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
 {
     protected $payment;
     protected $config;
+    protected $messenger;
 
     /**
      * Given drupal order and other required values
@@ -56,7 +56,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
                 }
             }
         }
-        catch (Exception $e)
+        catch (\Exception $exception)
         {
             $create = true;
         }
@@ -83,9 +83,11 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
                 return $razorpayOrder['id'];
             }
-            catch (Exception $exception)
+            catch (\Exception $exception)
             {
-                \Drupal::logger('drupal_commerce_razorpay')->error($exception->getMessage());
+                \Drupal::logger('RazorpayCheckoutForm')->error($exception->getMessage());
+
+                return "error";
             }
         }
     }
@@ -102,12 +104,14 @@ class RazorpayForm extends BasePaymentOffsiteForm
         return new Api($key, $secret);
     }
 
-    protected function setPaymentAndConfig()
+    protected function setPaymentConfigAndMessenger()
     {
         /** @var \Drupal\commerce_payment\Entity\PaymentInterface $payment */
         $this->payment = $this->entity;
 
         $this->config = $this->payment->getPaymentGateway()->getPlugin()->getConfiguration();
+
+        $this->messenger = \Drupal::messenger();
     }
 
     public function generateCheckoutForm(&$form, $orderId, $orderAmount)
@@ -145,7 +149,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
     {
         $form = parent::buildConfigurationForm($form, $form_state);
 
-        $this->setPaymentAndConfig();
+        $this->setPaymentConfigAndMessenger();
 
         $orderId = \Drupal::routeMatch()->getParameter('commerce_order')->id();
 
@@ -162,6 +166,19 @@ class RazorpayForm extends BasePaymentOffsiteForm
         ];
 
         $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderData);
+
+        if ($razorpayOrderId === 'error')
+        {
+            $this->messenger->addError($this->t('Unable to create Razorpay Order.'));
+
+            $url =  Url::fromRoute('commerce_checkout.form', [
+                'commerce_order' => $orderId,
+                'step' => 'review',
+            ], ['absolute' => TRUE])->toString();
+
+            $response = new RedirectResponse($url);
+            $response->send();
+        }
 
         $callbackUrl = Url::fromRoute('commerce_payment.checkout.return', [
             'commerce_order' => $orderId,
