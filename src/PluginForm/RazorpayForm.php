@@ -186,7 +186,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
             ]
         ];
 
-        $this->generateCheckoutForm($form, $orderId, $orderAmount);
+        $this->generateCheckoutForm($form, $orderId, $this->payment->getAmount()->getNumber());
 
         // Attach library.
         $form['#attached']['library'][] = 'drupal_commerce_razorpay/drupal_commerce_razorpay.payment';
