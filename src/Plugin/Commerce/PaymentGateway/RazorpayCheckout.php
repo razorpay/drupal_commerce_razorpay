@@ -188,7 +188,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             if ($status == "captured")
             {
                 // Status is success.
-                $remoteStatus = t('Success');
+                $remoteStatus = t('Completed');
 
                 $message = $this->t('Your payment was successful with Order id : @orderid has been received at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
             
