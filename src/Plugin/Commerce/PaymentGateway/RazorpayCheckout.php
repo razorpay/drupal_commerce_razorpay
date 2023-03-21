@@ -192,7 +192,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
 
                 $message = $this->t('Your payment was successful with Order id : @orderid has been received at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
             
-                $status = "success";
+                $status = "completed";
             }
             elseif ($status == "authorized")
             {
