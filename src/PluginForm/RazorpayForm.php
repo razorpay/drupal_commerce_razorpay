@@ -3,7 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\PluginForm;
 
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
-use Drupal\commerce_order\Entity\Order;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Razorpay\Api\Api;
@@ -15,6 +15,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
 {
     protected $payment;
     protected $config;
+    protected $messenger;
 
     /**
      * Given drupal order and other required values
@@ -55,7 +56,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
                 }
             }
         }
-        catch (Exception $e)
+        catch (\Exception $exception)
         {
             $create = true;
         }
@@ -82,9 +83,11 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
                 return $razorpayOrder['id'];
             }
-            catch (Exception $exception)
+            catch (\Exception $exception)
             {
-                \Drupal::logger('drupal_commerce_razorpay')->error($exception->getMessage());
+                \Drupal::logger('RazorpayCheckoutForm')->error($exception->getMessage());
+
+                return "error";
             }
         }
     }
@@ -101,14 +104,44 @@ class RazorpayForm extends BasePaymentOffsiteForm
         return new Api($key, $secret);
     }
 
-    protected function setPaymentAndConfig()
+    protected function setPaymentConfigAndMessenger()
     {
         /** @var \Drupal\commerce_payment\Entity\PaymentInterface $payment */
         $this->payment = $this->entity;
 
         $this->config = $this->payment->getPaymentGateway()->getPlugin()->getConfiguration();
+
+        $this->messenger = \Drupal::messenger();
     }
 
+    public function generateCheckoutForm(&$form, $orderId, $orderAmount)
+    {
+        $html = '<p>ORDER NUMBER: <b>' . $orderId . '</b>
+            <br>ORDER TOTAL: <b>' . $orderAmount . '</b>
+            </p><hr>
+            <h5>Thank you for your order, please click the button below to pay with Razorpay.</h5>';
+
+        $form['pay_now'] = array(
+            '#type' => 'button',
+            '#value' => $this->t('Pay Now'),
+            '#prefix' => $html,
+            '#attributes' => [
+                'id' => 'btn-razorpay'
+            ]
+        );
+
+        $form['cancel'] = array(
+            '#type' => 'button',
+            '#value' => $this->t('cancel'),
+            '#attributes' => [
+                'id' => 'btn-razorpay-cancel',
+                'onclick' => 'window.location.replace("' . $form['#cancel_url'] . '");'
+            ]
+        );
+
+        return $form;
+    }
+    
     /**
      * {@inheritdoc}
      */
@@ -116,9 +149,10 @@ class RazorpayForm extends BasePaymentOffsiteForm
     {
         $form = parent::buildConfigurationForm($form, $form_state);
 
-        $this->setPaymentAndConfig();
+        $this->setPaymentConfigAndMessenger();
 
-        $order_id = \Drupal::routeMatch()->getParameter('commerce_order')->id();
+        $orderId = \Drupal::routeMatch()->getParameter('commerce_order')->id();
+
         $order = $this->payment->getOrder();
         $address = $order->getBillingProfile()->address->first();
         $currency = $this->payment->getAmount()->getCurrencyCode();
@@ -133,8 +167,21 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
         $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderData);
 
+        if ($razorpayOrderId === 'error')
+        {
+            $this->messenger->addError($this->t('Unable to create Razorpay Order.'));
+
+            $url =  Url::fromRoute('commerce_checkout.form', [
+                'commerce_order' => $orderId,
+                'step' => 'review',
+            ], ['absolute' => TRUE])->toString();
+
+            $response = new RedirectResponse($url);
+            $response->send();
+        }
+
         $callbackUrl = Url::fromRoute('commerce_payment.checkout.return', [
-            'commerce_order' => $order_id,
+            'commerce_order' => $orderId,
             'step' => 'payment',
         ], ['absolute' => TRUE])->toString();
 
@@ -152,13 +199,15 @@ class RazorpayForm extends BasePaymentOffsiteForm
                 'contact'   => '',
             ],
             'notes'         => [
-                'drupal_order_id'   => $order_id
+                'drupal_order_id'   => $orderId
             ]
         ];
 
+        $this->generateCheckoutForm($form, $orderId, $this->payment->getAmount()->getNumber());
+
         // Attach library.
         $form['#attached']['library'][] = 'drupal_commerce_razorpay/drupal_commerce_razorpay.payment';
-        $form['#attached']['drupalSettings']['drupal_commerce_razorpay'] = $checkoutArgs;
+        $form['#attached']['drupalSettings']['razorpay_checkout_data'] = $checkoutArgs;
 
         return $form;
     }
