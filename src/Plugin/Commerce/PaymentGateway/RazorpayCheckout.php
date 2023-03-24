@@ -4,12 +4,16 @@ namespace Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway;
 
 use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGatewayBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\commerce_payment\Exception\PaymentGatewayException;
 use Drupal\Core\Form\FormStateInterface;
 use Razorpay\Api\Api;
 use Drupal\drupal_commerce_razorpay\AutoWebhook;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Razorpay\Api\Errors\SignatureVerificationError;
+use Drupal\commerce_payment\Entity\PaymentInterface;
+use Drupal\commerce_price\Price;
+
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
  *
@@ -236,5 +240,57 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             \Drupal::logger('RazorpayCheckout')->error($e->getMessage());
           
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function refundPayment(PaymentInterface $payment, Price $amount = NULL)
+    {
+        $this->assertPaymentState($payment, ['completed', 'partially_refunded']);
+
+        // If not specified, refund the entire amount.
+        $amount = $amount ?: $payment->getAmount();
+        $this->assertRefundAmount($payment, $amount);
+
+        try
+        {
+            $api = $this->getRazorpayApiInstance();
+
+            $razorpayPaymentId = $payment->getRemoteId();
+            $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
+            $razorpayPayment->refund(array('amount' => $amount * 100));
+        }
+        catch (\Exception $exception)
+        {
+            throw new PaymentGatewayException($e->getMessage());
+        }
+
+        $oldRefundedAmount = $payment->getRefundedAmount();
+        $newRefundedAmount = $oldRefundedAmount->add($amount);
+
+        if ($newRefundedAmount->lessThan($payment->getAmount()))
+        {
+            $payment->setState('partially_refunded');
+        }
+        else
+        {
+            $payment->setState('refunded');
+        }
+
+        $payment->setRefundedAmount($newRefundedAmount);
+        $payment->save();
+    }
+
+    protected function getRazorpayApiInstance($key = null, $secret = null)
+    {
+        if ($key === null or
+            $secret === null)
+        {
+            $key = $this->configuration['key_id'];
+            $secret = $this->configuration['key_secret'];
+        }
+
+        return new Api($key, $secret);
     }
 }
