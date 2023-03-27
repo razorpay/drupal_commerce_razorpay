@@ -13,6 +13,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Razorpay\Api\Errors\SignatureVerificationError;
 use Drupal\commerce_payment\Entity\PaymentInterface;
 use Drupal\commerce_price\Price;
+use Drupal\commerce_price\Calculator;
+use Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway\RazorpayInterface;
 
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
@@ -26,7 +28,7 @@ use Drupal\commerce_price\Price;
  *   }
  * )
  */
-class RazorpayCheckout extends OffsitePaymentGatewayBase
+class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInterface
 {
     /**
      * {@inheritdoc}
@@ -259,11 +261,11 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
 
             $razorpayPaymentId = $payment->getRemoteId();
             $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
-            $razorpayPayment->refund(array('amount' => $amount * 100));
+            $razorpayPayment->refund(array('amount' => Calculator::trim($amount) * 100));
         }
         catch (\Exception $exception)
         {
-            throw new PaymentGatewayException($e->getMessage());
+            throw new PaymentGatewayException($exception->getMessage());
         }
 
         $oldRefundedAmount = $payment->getRefundedAmount();
