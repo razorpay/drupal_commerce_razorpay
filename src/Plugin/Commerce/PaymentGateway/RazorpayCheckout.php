@@ -205,7 +205,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 // Batch process - Pending orders.
                 $remoteStatus = t('Pending');
                 $message = $this->t('Your payment with Order id : @orderid is pending at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
-                $status = "pending";
+                $status = "authorization";
             }
             elseif ($status == "failed")
             {
