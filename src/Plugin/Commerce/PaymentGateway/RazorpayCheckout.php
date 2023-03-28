@@ -247,6 +247,47 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     /**
      * {@inheritdoc}
      */
+    public function capturePayment(PaymentInterface $payment, Price $amount = NULL)
+    {
+        $this->assertPaymentState($payment, ['authorization']);
+
+        // If not specified, capture the entire amount.
+        $amount = $amount ?: $payment->getAmount();
+
+        try
+        {
+            $api = $this->getRazorpayApiInstance();
+
+            $razorpayPaymentId = $payment->getRemoteId();
+            $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
+
+            $captureParams = [
+                'amount' => Calculator::trim($amount) * 100,
+                'currency' => $amount->getCurrencyCode()
+            ];
+            $razorpayPayment->capture($captureParams);
+        }
+        catch (\Exception $exception)
+        {
+            throw new PaymentGatewayException($exception->getMessage());
+        }
+
+        $payment->setState('completed');
+        $payment->setAmount($amount);
+        $payment->save();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function voidPayment(PaymentInterface $payment)
+    {
+        throw new PaymentGatewayException('void payments are not supported. please click cancel');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function refundPayment(PaymentInterface $payment, Price $amount = NULL)
     {
         $this->assertPaymentState($payment, ['completed', 'partially_refunded']);
