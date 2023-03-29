@@ -4,12 +4,18 @@ namespace Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway;
 
 use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGatewayBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\commerce_payment\Exception\PaymentGatewayException;
 use Drupal\Core\Form\FormStateInterface;
 use Razorpay\Api\Api;
 use Drupal\drupal_commerce_razorpay\AutoWebhook;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Razorpay\Api\Errors\SignatureVerificationError;
+use Drupal\commerce_payment\Entity\PaymentInterface;
+use Drupal\commerce_price\Price;
+use Drupal\commerce_price\Calculator;
+use Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway\RazorpayInterface;
+
 /**
  * Provides the Razorpay offsite Checkout payment gateway.
  *
@@ -22,7 +28,7 @@ use Razorpay\Api\Errors\SignatureVerificationError;
  *   }
  * )
  */
-class RazorpayCheckout extends OffsitePaymentGatewayBase
+class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInterface
 {
     /**
      * {@inheritdoc}
@@ -199,7 +205,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
                 // Batch process - Pending orders.
                 $remoteStatus = t('Pending');
                 $message = $this->t('Your payment with Order id : @orderid is pending at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
-                $status = "pending";
+                $status = "authorization";
             }
             elseif ($status == "failed")
             {
@@ -236,5 +242,98 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase
             \Drupal::logger('RazorpayCheckout')->error($e->getMessage());
           
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function capturePayment(PaymentInterface $payment, Price $amount = NULL)
+    {
+        $this->assertPaymentState($payment, ['authorization']);
+
+        // If not specified, capture the entire amount.
+        $amount = $amount ?: $payment->getAmount();
+
+        try
+        {
+            $api = $this->getRazorpayApiInstance();
+
+            $razorpayPaymentId = $payment->getRemoteId();
+            $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
+
+            $captureParams = [
+                'amount' => Calculator::trim($amount) * 100,
+                'currency' => $amount->getCurrencyCode()
+            ];
+            $razorpayPayment->capture($captureParams);
+        }
+        catch (\Exception $exception)
+        {
+            throw new PaymentGatewayException($exception->getMessage());
+        }
+
+        $payment->setState('completed');
+        $payment->setAmount($amount);
+        $payment->save();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function voidPayment(PaymentInterface $payment)
+    {
+        throw new PaymentGatewayException('void payments are not supported. please click cancel');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function refundPayment(PaymentInterface $payment, Price $amount = NULL)
+    {
+        $this->assertPaymentState($payment, ['completed', 'partially_refunded']);
+
+        // If not specified, refund the entire amount.
+        $amount = $amount ?: $payment->getAmount();
+        $this->assertRefundAmount($payment, $amount);
+
+        try
+        {
+            $api = $this->getRazorpayApiInstance();
+
+            $razorpayPaymentId = $payment->getRemoteId();
+            $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
+            $razorpayPayment->refund(array('amount' => Calculator::trim($amount) * 100));
+        }
+        catch (\Exception $exception)
+        {
+            throw new PaymentGatewayException($exception->getMessage());
+        }
+
+        $oldRefundedAmount = $payment->getRefundedAmount();
+        $newRefundedAmount = $oldRefundedAmount->add($amount);
+
+        if ($newRefundedAmount->lessThan($payment->getAmount()))
+        {
+            $payment->setState('partially_refunded');
+        }
+        else
+        {
+            $payment->setState('refunded');
+        }
+
+        $payment->setRefundedAmount($newRefundedAmount);
+        $payment->save();
+    }
+
+    protected function getRazorpayApiInstance($key = null, $secret = null)
+    {
+        if ($key === null or
+            $secret === null)
+        {
+            $key = $this->configuration['key_id'];
+            $secret = $this->configuration['key_secret'];
+        }
+
+        return new Api($key, $secret);
     }
 }
