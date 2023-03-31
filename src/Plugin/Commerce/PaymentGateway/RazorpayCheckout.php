@@ -107,6 +107,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             return;
         }
 
+        $form_state->setValue('id', 'razorpay');
+
         $values = $form_state->getValue($form['#parents']);
 
         if (empty($values['key_id']) || empty($values['key_secret']))
