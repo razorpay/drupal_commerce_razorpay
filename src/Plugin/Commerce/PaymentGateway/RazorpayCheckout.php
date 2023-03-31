@@ -341,7 +341,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     */
     public function onCancel(OrderInterface $order, Request $request)
     {
-        
         $this->messenger()->addMessage($this->t('You have canceled checkout at @gateway but may resume the checkout process here when you are ready.', [
             '@gateway' => $this->getDisplayLabel(),
           ])
