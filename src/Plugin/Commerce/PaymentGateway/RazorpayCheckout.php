@@ -66,6 +66,9 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     {
         $form = parent::buildConfigurationForm($form, $form_state);
 
+        $form['display_label']['#prefix'] = 'First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal" target="_blank">signup</a> for a Razorpay account or
+            <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal" target="_blank">login</a> if you have an existing account.</p>';
+
         $form['key_id'] = [
             '#type' => 'textfield',
             '#title' => $this->t('Key ID'),
