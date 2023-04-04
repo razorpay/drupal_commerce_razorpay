@@ -116,10 +116,40 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
     public function generateCheckoutForm(&$form, $orderId, $orderAmount)
     {
+        $form['razorpay_order_id'] = [
+            '#type' => 'hidden',
+            '#attributes' => [
+                'id' => 'razorpay_order_id'
+            ]
+        ];
+
+        $form['razorpay_payment_id'] = [
+            '#type' => 'hidden',
+            '#attributes' => [
+                'id' => 'razorpay_payment_id'
+            ]
+        ];
+
+        $form['razorpay_signature'] = [
+            '#type' => 'hidden',
+            '#attributes' => [
+                'id' => 'razorpay_signature'
+            ]
+        ];
+
+        $form['rzp_submit_button'] = array(
+            '#type' => 'submit',
+            '#attributes' => [
+                'id' => 'rzp_submit_button',
+                'style' => 'display:none;'
+            ]
+        );
+
         $html = '<p>ORDER NUMBER: <b>' . $orderId . '</b>
             <br>ORDER TOTAL: <b>' . $orderAmount . '</b>
             </p><hr>
-            <h5>Thank you for your order, please click the button below to pay with Razorpay.</h5>';
+            <p>Thank you for your order, please click the button below to pay with Razorpay.</p>
+            <p id="msg-razorpay-success">Please wait while we are processing your payment.</p>';
 
         $form['pay_now'] = array(
             '#type' => 'button',
