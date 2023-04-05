@@ -361,109 +361,131 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         );
     }
      /**
-     * {@inheritdoc}
+    * {@inheritdoc}
     */
     public function onNotify(Request $request)
     {
+         // Implement your IPN message verification logic here.
+        //  $myfile = fopen("newfile.txt", "w") or die("Unable to open file!");
+        //     fwrite($myfile, json_encode($request));
+        //     fclose($myfile);
+         //   return true;
 
         $data = json_decode($request->getContent(), true);
     
         $api = $this->getRazorpayApiInstance();
-    
+     
         // Verify the webhook signature
         $signature = $request->headers->get('X-Razorpay-Signature');
         $webhook_secret = $this->configuration['webhook_secret'];
-    
-        try {
-             $api->utility->verifyWebhookSignature($request->getContent(), $signature, $webhook_secret);
-            }
+     
+        try
+        {
+              $api->utility->verifyWebhookSignature($request->getContent(), $signature, $webhook_secret);
+        }
         catch (\Exception $e)
         {
-            // Handle signature verification error
-            return new Response('Webhook signature verification failed', 400);
+             // Handle signature verification error
+            // return new Response('Webhook signature verification failed', 400);
+            $this->messenger()->addError($this->t('Webhook signature verification failed'));
+            \Drupal::logger('RazorpayWebhook')->error($e->getMessage());
         }
-    
-        // Handle the webhook event based on the event type
+     
+         // Handle the webhook event based on the event type
         $event_type = $data['event'];
-    
-        switch ($event_type) {
+     
+         switch ($event_type)
+        {
         case 'payment.authorized':
-                // Update the order status to "authorized"
+                 // Update the order status to "authorized"
                 $order_id = $data['payload']['payment']['order_id'];
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
                 $order = $order_storage->load($order_id);
-                if (!$order) {
-                return new Response('Order not found', 404);
+
+                if (!$order)
+                {
+                    return new Response('Order not found', 404);
                 }
+
                 $order->set('state', 'authorized');
                 $order->save();
-                
-                // Create a payment record in Drupal
+                 
+                 // Create a payment record in Drupal
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $payment = $payment_storage->create([
-                'state' => 'completed',
-                'amount' => $data['payload']['payment']['entity']['amount'],
-                'payment_gateway' => 'razorpay',
-                'order_id' => $order_id,
-                'remote_id' => $data['payload']['payment']['entity']['id'],
+                     'state' => 'completed',
+                     'amount' => $data['payload']['payment']['entity']['amount'],
+                    'payment_gateway' => 'razorpay',
+                     'order_id' => $order_id,
+                    'remote_id' => $data['payload']['payment']['entity']['id'],
                 ]);
                 $payment->save();
-                
-                break;
-                
-            case 'payment.captured':
-                // Update the order status to "captured"
+                 
+            break;
+                 
+        case 'payment.captured12':
+                 // Update the order status to "captured"
                 $order_id = $data['payload']['payment']['order_id'];
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
                 $order = $order_storage->load($order_id);
-                if (!$order) {
-                return new Response('Order not found', 404);
+
+                if (!$order)
+                {
+                     return new Response('Order not found', 404);
                 }
                 $order->set('state', 'completed');
                 $order->save();
-                
-                // Update the payment record in Drupal
+                 
+                 // Update the payment record in Drupal
                 $payment_id = $data['payload']['payment']['entity']['id'];
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
+
                 $payment = $payment_storage->loadByProperties([
-                'remote_id' => $payment_id,
+                      'remote_id' => $payment_id,
                 ]);
-                if (!$payment) {
-                return new Response('Payment not found', 404);
+
+                if (!$payment)
+                {
+                     return new Response('Payment not found', 404);
                 }
                 $payment = reset($payment);
                 $payment->set('state', 'completed');
                 $payment->save();
-                
-                break;
-                
-            case 'payment.failed':
-                // Update the order status to "failed"
+                 
+            break;
+                 
+        case 'payment.failed':
+                 // Update the order status to "failed"
                 $order_id = $data['payload']['payment']['order_id'];
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
                 $order = $order_storage->load($order_id);
-                if (!$order) {
-                return new Response('Order not found',  404);
+                if (!$order)
+                {
+                     return new Response('Order not found',  404);
                 }
                 $order->set('state', 'canceled');
                 $order->save();
-                
-                // Update the payment record in Drupal
+                 
+                 // Update the payment record in Drupal
                 $payment_id = $data['payload']['payment']['entity']['id'];
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
+
                 $payment = $payment_storage->loadByProperties([
-                'remote_id' => $payment_id,
+                    'remote_id' => $payment_id,
                 ]);
-                if (!$payment) {
-                return new Response('Payment not found', 404);
+
+                if (!$payment)
+                {
+                    return new Response('Payment not found', 404);
                 }
-            $payment = reset($payment);
+                
+                $payment = reset($payment);
                 $payment->set('state', 'failed');
                 $payment->save();
-                
-                break;
-            }
-    
-        return new Response('Webhook processed successfully', 200);
+                 
+            break;
+         }
+     
+         return new Response('Webhook processed successfully', 200);
     }
 }
