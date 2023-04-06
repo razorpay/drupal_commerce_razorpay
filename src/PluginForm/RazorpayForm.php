@@ -5,6 +5,7 @@ namespace Drupal\drupal_commerce_razorpay\PluginForm;
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\Yaml\Yaml;
 use Drupal\Core\Url;
 use Razorpay\Api\Api;
 
@@ -210,28 +211,64 @@ class RazorpayForm extends BasePaymentOffsiteForm
             $response->send();
         }
 
-        $callbackUrl = Url::fromRoute('commerce_payment.checkout.return', [
-            'commerce_order' => $orderId,
-            'step' => 'payment',
-        ], ['absolute' => TRUE])->toString();
-
-        $checkoutArgs = [
-            'key'           => $this->config['key_id'],
+        $defaultCheckoutArgs = [
             'amount'        => $orderAmount,
-            'image'         => 'https://cdn.razorpay.com/static/assets/logo/payment.svg',
             'order_id'      => $razorpayOrderId,
             'name'          => \Drupal::config('system.site')->get('name'),
-            'currency'      => $currency,
-            'callback_url'  => $callbackUrl,
-            'prefill'       => [
-                'name'      => $address->getGivenName() . " " . $address->getFamilyName(),
-                'email'     => $order->getEmail(),
-                'contact'   => '',
-            ],
-            'notes'         => [
-                'drupal_order_id'   => $orderId
-            ]
+            'description'   => 'Order ' . $orderId,
+            'currency'      => $currency
         ];
+
+        // embeded checkout
+        $api = new Api($this->config['key_id'], '');;
+        $merchantPreferences = $api->request->request("GET", "preferences");
+
+        if(isset($merchantPreferences['options']['redirect']) and
+            $merchantPreferences['options']['redirect'] === true)
+        {
+
+            $commerceInfo = Yaml::parse(file_get_contents('modules/contrib/commerce/commerce.info.yml'));
+            $commerceVersion = $commerceInfo['version'];
+            $rzpModuleInfo = Yaml::parse(file_get_contents('modules/drupal_commerce_razorpay/drupal_commerce_razorpay.info.yml'));
+            $rzpModuleVersion = $rzpModuleInfo['version'];
+
+            $checkoutArgs = [
+                'key_id'                        => $this->config['key_id'],
+                'image'                         => $merchantPreferences['options']['image'],
+                'callback_url'                  => $form['#return_url'],
+                'cancel_url'                    => $form['#cancel_url'],
+                'prefill[name]'                 => $address->getGivenName() . " " . $address->getFamilyName(),
+                'prefill[email]'                => $order->getEmail(),
+                'notes[drupal_order_id]'        => $orderId,
+                '_[integration]'                => 'drupal commerce',
+                '_[integration_version]'        => $rzpModuleVersion,
+                '_[integration_parent_version]' => $commerceVersion,
+                '_[integration_type]'           => 'plugin',
+            ];
+
+            $checkoutArgs = array_merge($defaultCheckoutArgs, $checkoutArgs);
+
+            $url = Api::getFullUrl("checkout/embedded");
+
+            return $this->buildRedirectForm($form, $form_state, $url, $checkoutArgs, self::REDIRECT_POST);
+        }
+        else
+        {
+            $checkoutArgs = [
+                'key'           => $this->config['key_id'],
+                'image'         => 'https://cdn.razorpay.com/static/assets/logo/payment.svg',
+                'prefill'       => [
+                    'name'      => $address->getGivenName() . " " . $address->getFamilyName(),
+                    'email'     => $order->getEmail(),
+                    'contact'   => '',
+                ],
+                'notes'         => [
+                    'drupal_order_id'   => $orderId
+                ]
+            ];
+
+            $checkoutArgs = array_merge($defaultCheckoutArgs, $checkoutArgs);
+        }
 
         $this->generateCheckoutForm($form, $orderId, $this->payment->getAmount()->getNumber());
 
