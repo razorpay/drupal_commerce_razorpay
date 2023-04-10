@@ -3,6 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\PluginForm;
 
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -81,6 +82,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
                 $order->setData('razorpay_order_amount', $razorpayOrder->amount);
                 $order->save();
 
+                $this->newTrackPluginInstrumentation();
                 return $razorpayOrder['id'];
             }
             catch (\Exception $exception)
@@ -112,6 +114,14 @@ class RazorpayForm extends BasePaymentOffsiteForm
         $this->config = $this->payment->getPaymentGateway()->getPlugin()->getConfiguration();
 
         $this->messenger = \Drupal::messenger();
+    }
+
+    public function newTrackPluginInstrumentation()
+    {
+        $api = $this->getRazorpayApiInstance();
+        $key = $this->config['key_id'];
+
+        return new TrackPluginInstrumentation($api, $key);
     }
 
     public function generateCheckoutForm(&$form, $orderId, $orderAmount)
