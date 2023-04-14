@@ -1,12 +1,8 @@
 (function ($, Drupal) {
-  'use strict';
+    'use strict';
     Drupal.behaviors.commerceRazorpayCheckout = {
         attach: function (context, drupalSettings) {
             once('commerceRazorpayCheckout', 'html').forEach(function (element) {
-
-                $("#msg-razorpay-success").css("background-color", "yellow");
-                $('#msg-razorpay-success').hide();
-
                 var data = drupalSettings.razorpay_checkout_data;
 
                 var setDisabled = function(id, state) {
@@ -21,19 +17,19 @@
                     }
                 };
 
+                $("#msg-razorpay-success").css("background-color", "yellow");
+                $('#msg-razorpay-success').hide();
+                setDisabled('btn-razorpay', false);
+
                 data.modal = {
                     ondismiss: function() {
                         setDisabled('btn-razorpay', false);
                     },
                 };
 
-                data.handler = function(payment) {
-                    setDisabled('btn-razorpay-cancel');
+                window.onbeforeunload = function(e) {
                     $('#msg-razorpay-success').show();
-                    $('#razorpay_order_id').val(payment.razorpay_order_id);
-                    $('#razorpay_payment_id').val(payment.razorpay_payment_id);
-                    $('#razorpay_signature').val(payment.razorpay_signature);
-                    $('#rzp_submit_button').click();
+                    setDisabled('btn-razorpay-cancel');
                 };
 
                 var razorpayCheckout = new Razorpay(data);
@@ -52,6 +48,7 @@
 
                 $('#btn-razorpay-cancel').on('click', function(event) {
                     event.preventDefault();
+                    $('#msg-razorpay-success').hide();
                 });
             })
         }
