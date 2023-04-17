@@ -246,7 +246,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             throw new PaymentGatewayException($message);
 
         }
-        catch (\Exception $exception)
+        catch (\Throwable $exception)
         {
             \Drupal::logger('RazorpayOnReturn')->error($exception->getMessage());
             throw new PaymentGatewayException($exception->getMessage());
