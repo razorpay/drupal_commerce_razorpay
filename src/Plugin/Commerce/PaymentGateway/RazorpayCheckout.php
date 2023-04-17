@@ -177,11 +177,11 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         //validate Rzp signature
         try
         {  
-            $attributes = array(
-            'razorpay_order_id' => $request->get('razorpay_order_id'),
-            'razorpay_payment_id' => $request->get('razorpay_payment_id'),
-            'razorpay_signature' => $request->get('razorpay_signature')
-             );
+            $attributes = [
+                'razorpay_order_id' => $request->get('razorpay_order_id'),
+                'razorpay_payment_id' => $request->get('razorpay_payment_id'),
+                'razorpay_signature' => $request->get('razorpay_signature')
+            ];
         
             $api->utility->verifyPaymentSignature($attributes);
 
