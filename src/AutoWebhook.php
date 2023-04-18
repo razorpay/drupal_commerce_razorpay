@@ -112,17 +112,20 @@ class AutoWebhook
             if ($webhookExist)
             {
                 //updating webhook
+                \Drupal::logger('RazorpayAutoWebhook')->info('Updating razorpay webhook');
                 return $api->webhook->edit($requestBody, $webhookId);
             }
             else
             {
                 //creating webhook
+                \Drupal::logger('RazorpayAutoWebhook')->info('Creating razorpay webhook');
                 return $api->webhook->create($requestBody);
             }
         }
         catch (\Exception $exception)
         {
-            \Drupal::logger('drupal_commerce_razorpay')->error($exception->getMessage());
+            \Drupal::messenger()->addError(t('RazorpayAutoWebhook: ' . $exception->getMessage()));
+            \Drupal::logger('RazorpayAutoWebhook')->error($exception->getMessage());
         }
     }
 }

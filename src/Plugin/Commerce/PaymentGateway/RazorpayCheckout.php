@@ -239,13 +239,17 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             \Drupal::messenger()->addMessage($message);
 
         }
-        catch (SignatureVerificationError $e)
+        catch (SignatureVerificationError $exception)
         {
-            $message = "Your payment to Razorpay failed " . $e->getMessage();
-            $this->messenger()->addError($this->t($message));
+            $message = "Your payment to Razorpay failed " . $exception->getMessage();
+            \Drupal::logger('RazorpayOnReturn')->error($exception->getMessage());
+            throw new PaymentGatewayException($message);
 
-            \Drupal::logger('RazorpayCheckout')->error($e->getMessage());
-          
+        }
+        catch (\Throwable $exception)
+        {
+            \Drupal::logger('RazorpayOnReturn')->error($exception->getMessage());
+            throw new PaymentGatewayException($exception->getMessage());
         }
     }
 
@@ -274,6 +278,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         }
         catch (\Exception $exception)
         {
+            \Drupal::logger('RazorpayCapturePayment')->error($exception->getMessage());
             throw new PaymentGatewayException($exception->getMessage());
         }
 
@@ -311,6 +316,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         }
         catch (\Exception $exception)
         {
+            \Drupal::logger('RazorpayRefund')->error($exception->getMessage());
             throw new PaymentGatewayException($exception->getMessage());
         }
 
