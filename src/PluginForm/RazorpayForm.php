@@ -71,7 +71,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
                     'currency'        => $orderData['currency'],
                     'payment_capture' => ($orderData['payment_action'] === 'authorize') ? 0 : 1,
                     'notes'           => [
-                        'drupal_order_number'  => (string) $order->id(),
+                        'drupal_order_id'  => (string) $order->id(),
                     ],
                 ];
 
