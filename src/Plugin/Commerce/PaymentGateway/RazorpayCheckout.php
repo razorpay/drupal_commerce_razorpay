@@ -214,11 +214,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             }
             elseif ($status == "failed")
             {
-                // Failed transaction.
-                $remoteStatus = t('Failure');
-                $message = $this->t('Your payment with Order id : @orderid failed at : @date', ['@orderid' => $order->id(), '@date' => date("d-m-Y H:i:s", $requestTime)]);
-                $status = "fail";
-
+                // Failed transaction
                 throw new PaymentGatewayException($message);
             }
       
