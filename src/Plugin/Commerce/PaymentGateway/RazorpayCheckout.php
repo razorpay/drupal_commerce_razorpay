@@ -365,7 +365,16 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     */
     public function onNotify(Request $request)
     {
-    
+        $supportedWebhookEvents = [
+            'payment.authorized',
+            'refund.created'
+        ];
+
+        // Ignore unsupported events.
+        if (isset($data['event']) === false or
+            in_array($data['event'], $supportedWebhookEvents) === false) {
+            return;
+        }
 
         $data = json_decode($request->getContent(), true);
     
@@ -373,33 +382,43 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
      
         // Verify the webhook signature
         $signature = $request->headers->get('X-Razorpay-Signature');
-       
+
         $config = \Drupal::config('drupal_commerce_razorpay.settings');
         $webhook_secret = $config->get('razorpay_flags.webhook_secret');
 
-     
         try
         {
-              $api->utility->verifyWebhookSignature($request->getContent(), $signature, $webhook_secret);
+            $api->utility->verifyWebhookSignature($request->getContent(), $signature, $webhook_secret);
         }
-        catch (\Exception $e)
+        catch (\Exception $exception)
         {
-             // Handle signature verification error
-            
-            $this->messenger()->addError($this->t('Webhook signature verification failed'));
-            \Drupal::logger('RazorpayWebhook')->error($e->getMessage());
+            // Handle signature verification error
+            \Drupal::logger('RazorpayWebhook')->error($exception->getMessage());
         }
      
-         // Handle the webhook event based on the event type
-        $event_type = $data['event'];
+        // Handle the webhook event based on the event type
+        $event = $data['event'];
      
-         switch ($event_type)
+        switch ($event)
         {
             case 'payment.authorized':
                 $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
+                $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+
+                $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
+
+                if ($razorpayPayment['status'] === 'captured')
+                {
+                    $state = 'completed';
+                }
+                else if ($razorpayPayment['status'] === 'authorized')
+                {
+                    $state = 'authorization';
+                }
+
                 $payment = $paymentStorage->create([
-                    'state' => 'completed',
+                    'state' => $state,
                     'amount' => $data['payload']['payment']['entity']['amount'],
                     'payment_gateway' => 'razorpay',
                     'order_id' => $order_id,
@@ -409,6 +428,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                     'authorized' => $this->time->getRequestTime(),
                 ]);
                 $payment->save();
+
                 break;
                  
         case 'payment.failed':
