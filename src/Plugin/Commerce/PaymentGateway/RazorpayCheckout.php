@@ -437,7 +437,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                  
         case 'payment.failed':
                  // Update the order status to "failed"
-                $order_id =  $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
+                $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
                 $order = $order_storage->load($order_id);
                 if (!$order)
@@ -471,7 +471,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
             case 'payment.refunded':
                 // Update the payment and order statuses to "refunded"
-                $order_id = $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
+                $order_id =  $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $payment_id = $data['payload']['payment']['entity']['id'];
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $payments = $payment_storage->loadByProperties(['remote_id' => $payment_id]);
