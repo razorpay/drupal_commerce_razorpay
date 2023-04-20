@@ -437,12 +437,14 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                  
         case 'payment.failed':
                  // Update the order status to "failed"
-                $order_id = $data['payload']['payment']['order_id'];
+                $order_id =  $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
                 $order = $order_storage->load($order_id);
                 if (!$order)
                 {
-                     return new Response('Order not found',  404);
+                    \Drupal::logger('RazorpayWebhook')->info("Order not Found : ". $order_id);
+           
+                    return new Response('Order not found',  404);
                 }
                 $order->set('state', 'canceled');
                 $order->save();
@@ -457,6 +459,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
                 if (!$payment)
                 {
+                    \Drupal::logger('RazorpayWebhook')->info("Payment not Found : ". $payment_id);
                     return new Response('Payment not found', 404);
                 }
                 
@@ -468,11 +471,13 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
             case 'payment.refunded':
                 // Update the payment and order statuses to "refunded"
-                $order_id = $data['payload']['payment']['order_id'];
+                $order_id = $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $payment_id = $data['payload']['payment']['entity']['id'];
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $payments = $payment_storage->loadByProperties(['remote_id' => $payment_id]);
                 if (count($payments) !== 1) {
+                    
+                    \Drupal::logger('RazorpayWebhook')->info("Payment not Found : ". $payment_id);
                   return new Response('Payment not found or multiple payments found', 404);
                 }
                 $payment = reset($payments);
@@ -485,6 +490,9 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 break;
          }
      
+         \Drupal::logger('RazorpayWebhook')->info("Webhook processed successfully for ". $event);
+                     
          return new Response('Webhook processed successfully', 200);
     }
+}
 }
