@@ -370,14 +370,14 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             'refund.created'
         ];
 
+        $data = json_decode($request->getContent(), true);
+
         // Ignore unsupported events.
         if (isset($data['event']) === false or
             in_array($data['event'], $supportedWebhookEvents) === false) {
             return;
         }
 
-        $data = json_decode($request->getContent(), true);
-    
         $api = $this->getRazorpayApiInstance();
      
         // Verify the webhook signature
@@ -417,14 +417,18 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                     $state = 'authorization';
                 }
 
+                $amount = Price::fromArray([
+                    'number' => $data['payload']['payment']['entity']['amount'],
+                    'currency_code' => $data['payload']['payment']['entity']['currency'],
+                ]);
+
                 $payment = $paymentStorage->create([
                     'state' => $state,
-                    'amount' => $data['payload']['payment']['entity']['amount'],
-                    'payment_gateway' => 'razorpay',
+                    'amount' => $amount,
+                    'payment_gateway' => $this->entityId,
                     'order_id' => $order_id,
                     'remote_id' => $data['payload']['payment']['entity']['id'],
                     'remote_state' => $data['payload']['payment']['entity']['status'],
-                    'currency_code' => $data['payload']['payment']['entity']['notes']['currency'],
                     'authorized' => $this->time->getRequestTime(),
                 ]);
                 $payment->save();
