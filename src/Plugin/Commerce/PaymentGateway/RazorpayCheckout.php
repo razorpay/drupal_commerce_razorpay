@@ -171,6 +171,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     */
     public function onReturn(OrderInterface $order, Request $request) 
     {
+        die;
         $keyId = $this->configuration['key_id'];
         $keySecret = $this->configuration['key_secret'];
         $api = new Api($keyId, $keySecret);
@@ -418,7 +419,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 }
 
                 $amount = Price::fromArray([
-                    'number' => $data['payload']['payment']['entity']['amount'],
+                    'number' => ($data['payload']['payment']['entity']['amount'])/100,
                     'currency_code' => $data['payload']['payment']['entity']['currency'],
                 ]);
 
