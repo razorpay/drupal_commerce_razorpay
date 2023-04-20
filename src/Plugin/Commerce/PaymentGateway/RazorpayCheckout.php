@@ -171,7 +171,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     */
     public function onReturn(OrderInterface $order, Request $request) 
     {
-        die;
         $keyId = $this->configuration['key_id'];
         $keySecret = $this->configuration['key_secret'];
         $api = new Api($keyId, $keySecret);
