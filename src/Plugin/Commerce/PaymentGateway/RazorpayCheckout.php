@@ -31,6 +31,13 @@ use Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway\RazorpayInter
  */
 class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInterface
 {
+
+    /**
+     * Event constants
+     */
+    const PAYMENT_AUTHORIZED       = 'payment.authorized';
+    const PAYMENT_FAILED           = 'payment.failed';
+    const REFUNDED_CREATED         = 'refund.created';
     /**
      * {@inheritdoc}
      */
@@ -401,7 +408,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
      
         switch ($event)
         {
-            case 'payment.authorized':
+            case self::PAYMENT_AUTHORIZED:
                 $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
@@ -435,7 +442,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
                 break;
                  
-        case 'payment.failed':
+        case self::PAYMENT_FAILED:
                  // Update the order status to "failed"
                 $order_id = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
@@ -469,7 +476,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                  
             break;
 
-            case 'payment.refunded':
+            case self::REFUNDED_CREATED:
                 // Update the payment and order statuses to "refunded"
                 $order_id =  $data['payload']['payment']['entity']['notes']['drupal_order_id'];
                 $payment_id = $data['payload']['payment']['entity']['id'];
