@@ -1,0 +1,19 @@
+<?php
+
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_delete().
+ */
+function drupal_commerce_razorpay_entity_delete(EntityInterface $entity) {
+    $query = \Drupal::database()->query("SELECT CAST(`data` AS CHAR(10000) CHARACTER SET utf8) AS decoded_data  FROM config WHERE `name` = :namekey", [':namekey' => 'commerce_payment.commerce_payment_gateway.razorpay']);
+        
+    $data = unserialize($query->fetchField());
+
+    if(empty($data))
+    {
+        $trackObject = new TrackPluginInstrumentation();
+        $trackObject->razorpayPaymentDeleted();
+    }
+}

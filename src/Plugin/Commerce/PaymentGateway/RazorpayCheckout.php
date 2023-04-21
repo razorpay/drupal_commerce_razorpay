@@ -3,6 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway;
 
 use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGatewayBase;
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\commerce_payment\Exception\PaymentGatewayException;
 use Drupal\Core\Form\FormStateInterface;
@@ -127,6 +128,35 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             return;
         }
 
+        $status = $form_state->cleanValues()->getValues($form['#parents'])['status'];
+        
+        $query = \Drupal::database()->query("SELECT CAST(`data` AS CHAR(10000) CHARACTER SET utf8) AS decoded_data  FROM config WHERE `name` = :namekey", [':namekey' => 'commerce_payment.commerce_payment_gateway.razorpay']);
+        
+        $data = unserialize($query->fetchField());
+
+        $authEvent = '';
+
+        $authProperties = [
+            'is_key_id_populated'     => true,
+            'is_key_secret_populated' => true,
+            'page_url'                => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
+            'auth_successful_status'  => true,
+            'is_plugin_activated'     => $status
+        ];
+
+        if(empty($data['configuration']['key_id']) and empty($data['configuration']['key_secret']))
+        {
+            $authEvent = 'saving auth details';
+        }
+        else
+        {
+            $authEvent = 'updating auth details';
+        }
+
+        $trackObject = $this->newTrackPluginInstrumentation();
+
+        $trackObject->rzpTrackDataLake($authEvent, $authProperties);
+
         try
         {
             $api = new Api($values['key_id'], $values['key_secret']);
@@ -163,9 +193,50 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         $autoWebhook = new AutoWebhook();
         $autoWebhook->autoEnableWebhook($values['key_id'], $values['key_secret']);
+
+        $status = $form_state->cleanValues()->getValues($form['#parents'])['status'];
+        
+        $isTransactingUser = false;
+        
+        $query = \Drupal::database()->query("SELECT order_number FROM commerce_order WHERE payment_gateway = :gateway",[':gateway' => 'razorpay']);
+        
+        $data = $query->fetchField();
+
+        if (empty($data) === false and
+            ($data == null) === false)
+        {
+            $isTransactingUser = true;
+        }
+
+        $trackObject = $this->newTrackPluginInstrumentation();
+
+        $pluginStatusProperties = [
+            'current_status'      => ($status === 1)?'enabled':'disabled' ,
+            'is_transacting_user' => $isTransactingUser
+        ];
+
+        if($status)
+        {
+            $pluginStatusEvent = 'plugin enabled';
+        }
+
+        else
+        {
+            $pluginStatusEvent = 'plugin disabled';
+        }
+
+        $trackObject->rzpTrackDataLake($pluginStatusEvent, $pluginStatusProperties);
     }
 
-  /**
+    public function newTrackPluginInstrumentation()
+    {
+        $api = $this->getRazorpayApiInstance();
+        $key = $this->configuration['key_id'];
+
+        return new TrackPluginInstrumentation($api, $key);
+    }
+
+    /**
     * {@inheritdoc}
     */
     public function onReturn(OrderInterface $order, Request $request) 
