@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_commerce_razorpay;
 
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
 use Razorpay\Api\Api;
 use Drupal\Core\Url;
 
@@ -127,6 +128,13 @@ class AutoWebhook
                     }
                 }
             }
+
+            $webhookProperties = [
+                'page_url'       => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                'prev_page_url'  => $_SERVER['HTTP_REFERER'],
+                'events_selected'     => $this->defaultWebhookEvents,
+            ];
+            
             if ($webhookExist)
             {
                 //updating webhook

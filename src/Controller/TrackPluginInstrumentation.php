@@ -144,6 +144,7 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         $defaultProperties = [
             'platform'            => 'Drupal',
             'platform_version'    => \Drupal::VERSION,
+            'plugin_name'         => 'drupal_commerce_razorpay',
             'unique_id'           => $_SERVER['HTTP_HOST']
         ];
 
