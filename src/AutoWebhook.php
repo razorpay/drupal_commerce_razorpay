@@ -68,20 +68,11 @@ class AutoWebhook
             {
                 $validationErrorProperties = $this->triggerValidationInstrumentation(
                     ['error_message' => 'Key Id and or Key Secret is null'], $key_id);
-                ?>
-                <div class="notice error is-dismissible" >
-                    <p><b>
-                <?php 
-                \Drupal::logger('error')->error('Key Id and Key Secret are required.'); 
-                ?>
-                <b></p>
-                </div>
-                
-                <?php
 
                 \Drupal::logger('error')->error('Key Id and Key Secret are required.');
                 return;
             }
+
             $api = new Api($key_id, $key_secret);
 
             do {
@@ -134,11 +125,11 @@ class AutoWebhook
                 'prev_page_url'  => $_SERVER['HTTP_REFERER'],
                 'events_selected'     => $this->defaultWebhookEvents,
             ];
-            
+
             if ($webhookExist)
             {
                 //updating webhook
-                $trackObject = $this->newTrackPluginInstrumentation($key_id, '');
+                $trackObject = $this->newTrackPluginInstrumentation($key_id, $key_secret);
                 $trackObject->rzpTrackDataLake('autowebhook.updated', $webhookProperties);
 
                 \Drupal::logger('RazorpayAutoWebhook')->info('Updating razorpay webhook');
@@ -147,7 +138,7 @@ class AutoWebhook
             else
             {
                 //creating webhook
-                $trackObject = $this->newTrackPluginInstrumentation($key_id, '');
+                $trackObject = $this->newTrackPluginInstrumentation($key_id, $key_secret);
                 $trackObject->rzpTrackDataLake('autowebhook.created', $webhookProperties);
 
                 \Drupal::logger('RazorpayAutoWebhook')->info('Creating razorpay webhook');
@@ -157,14 +148,14 @@ class AutoWebhook
         catch (\Exception $exception)
         {
             $validationErrorProperties = $this->triggerValidationInstrumentation(
-                ['error_message' => 'Invalid Key Id and Key Secret'], $key_id);
+                ['error_message' => 'Invalid Key Id or Key Secret'], $key_id, $key_secret);
 
             \Drupal::messenger()->addError(t('RazorpayAutoWebhook: ' . $exception->getMessage()));
             \Drupal::logger('RazorpayAutoWebhook')->error($exception->getMessage());
         }
     }
 
-    protected function triggerValidationInstrumentation($data, $key_id)
+    protected function triggerValidationInstrumentation($data, $key_id, $key_secret)
     {
         $properties = [
             'page_url'            => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
@@ -174,7 +165,7 @@ class AutoWebhook
 
         $properties = array_merge($properties, $data);
 
-        $trackObject = $this->newTrackPluginInstrumentation($key_id, '');
+        $trackObject = $this->newTrackPluginInstrumentation($key_id, $key_secret);
         $trackObject->rzpTrackDataLake('formfield.validation.error', $properties);
     }
 
