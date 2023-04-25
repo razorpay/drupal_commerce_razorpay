@@ -484,12 +484,27 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                     \Drupal::logger('RazorpayWebhook')->info("Payment not Found : ". $paymentId);
                   return new Response('Payment not found or multiple payments found', 404);
                 }
+                $totalamt= ($data['payload']['payment']['entity']['amount'])/100;
+
+                $amtRefund= ($data['payload']['payment']['entity']['amount_refunded'])/100;
+                
+                if($totalamt === $amtRefund)
+                {
+                    $state = 'refunded';
+                }
+                else
+                {
+                    $state = 'partially_refunded';
+                }
+                
                 $payment = reset($payments);
-                $payment->setState('refunded');
+                $payment->setState($state);
+                $payment->set('refunded_amount__number', $amount_refunded);
+
                 $payment->save();
-                $order = $payment->getOrder();
-                $order->set('state', 'canceled');
-                $order->save();
+                // $order = $payment->getOrder();
+                // $order->set('state', 'canceled');
+                // $order->save();
                 
                 break;
          }
