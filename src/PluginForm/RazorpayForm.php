@@ -218,7 +218,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
             $configFactory = \Drupal::configFactory();
             $configFlags = $configFactory->getEditable('drupal_commerce_razorpay.settings');
             $settingFlags = $configFlags->get('razorpay_flags');
-            $webhookEnableAt = $settingFlags['webhook_enable_at']- 86410;
+            $webhookEnableAt = $settingFlags['webhook_enable_at'];
 
             if (empty($webhookEnableAt) === true or
                 ($webhookEnableAt + static::TWELVE_HOURS) < time())
