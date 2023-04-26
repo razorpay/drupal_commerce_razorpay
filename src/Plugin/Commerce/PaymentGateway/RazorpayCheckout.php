@@ -38,11 +38,14 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     const PAYMENT_AUTHORIZED       = 'payment.authorized';
     const PAYMENT_FAILED           = 'payment.failed';
     const REFUNDED_CREATED         = 'refund.created';
-
+    
      /**
      * @var Webhook Notify Wait Time
      */
     protected const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
+
+    const FIVE_DAYS_IN_SECONDS     = (5 * 24 * 60 * 60);
+  
     /**
      * {@inheritdoc}
      */
@@ -183,7 +186,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     */
     public function onReturn(OrderInterface $order, Request $request) 
     {
-        die;
+       
         $keyId = $this->configuration['key_id'];
         $keySecret = $this->configuration['key_secret'];
         $api = new Api($keyId, $keySecret);
@@ -421,6 +424,30 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         {
         case self::PAYMENT_AUTHORIZED:
                 
+                $razorpayCreatedAt = $data['payload']['payment']['entity']['created_at'];
+
+                if ($razorpayCreatedAt > self::FIVE_DAYS_IN_SECONDS)
+                {
+                    $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
+                    $order = $order_storage->load($orderId);
+
+                    if (!$order)
+                        {
+                            \Drupal::logger('RazorpayWebhook')->info("Order not Found : ". $orderId);
+                
+                            return new Response('Order not found',  404);
+                        }
+
+                    $order->set('state', 'canceled');
+                    $order->save();
+                 
+                                
+                    \Drupal::logger('RazorpayWebhook')->info("Authorization expired for order ID: ". $orderId);
+
+                    exit;
+                    
+                }
+
                 $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
@@ -469,14 +496,13 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                  
                  // Update the payment record in Drupal
                
-                    \Drupal::logger('RazorpayWebhook')->info("Payment not Found for order ID: ". $orderId);
+                \Drupal::logger('RazorpayWebhook')->info("Payment not Found for order ID: ". $orderId);
                  
             break;
 
             case self::REFUNDED_CREATED:
                 // Update the payment and order statuses to "refunded"
-                
-               
+                               
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $payments = $payment_storage->loadByProperties(['remote_id' => $paymentId]);
                 if (count($payments) !== 1) {
@@ -499,12 +525,9 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 
                 $payment = reset($payments);
                 $payment->setState($state);
-                $payment->set('refunded_amount__number', $amount_refunded);
-
+                $refund_amount = new Price((string) $amtRefund, $payment->getAmount()->getCurrencyCode());
+                $payment->setRefundedAmount($refund_amount);
                 $payment->save();
-                // $order = $payment->getOrder();
-                // $order->set('state', 'canceled');
-                // $order->save();
                 
                 break;
          }
