@@ -18,6 +18,8 @@ class RazorpayForm extends BasePaymentOffsiteForm
     protected $config;
     protected $messenger;
 
+    protected const TWELVE_HOURS = 86400;
+
     /**
      * Given drupal order and other required values
      * to find the associated Razorpay Order using
@@ -219,7 +221,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
             $webhookEnableAt = $settingFlags['webhook_enable_at']- 86410;
 
             if (empty($webhookEnableAt) === true or
-                ($webhookEnableAt + 86400) < time())
+                ($webhookEnableAt + static::TWELVE_HOURS) < time())
             {
                 $autoWebhook = new AutoWebhook();
                 $autoWebhook->autoEnableWebhook($this->config['key_id'], $this->config['key_secret']);
