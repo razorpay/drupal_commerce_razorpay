@@ -3,6 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\PluginForm;
 
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
+use Drupal\drupal_commerce_razorpay\AutoWebhook;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -209,6 +210,25 @@ class RazorpayForm extends BasePaymentOffsiteForm
         // Attach library.
         $form['#attached']['library'][] = 'drupal_commerce_razorpay/drupal_commerce_razorpay.payment';
         $form['#attached']['drupalSettings']['razorpay_checkout_data'] = $checkoutArgs;
+
+        try
+        {
+            $configFactory = \Drupal::configFactory();
+            $configFlags = $configFactory->getEditable('drupal_commerce_razorpay.settings');
+            $settingFlags = $configFlags->get('razorpay_flags');
+            $webhookEnableAt = $settingFlags['webhook_enable_at']- 86410;
+
+            if (empty($webhookEnableAt) === true or
+                ($webhookEnableAt + 86400) < time())
+            {
+                $autoWebhook = new AutoWebhook();
+                $autoWebhook->autoEnableWebhook($this->config['key_id'], $this->config['key_secret']);
+            }
+        }
+        catch (\Exception $exception)
+        {
+            \Drupal::logger('RazorpayAutoWebhook')->error($exception->getMessage());
+        }
 
         return $form;
     }
