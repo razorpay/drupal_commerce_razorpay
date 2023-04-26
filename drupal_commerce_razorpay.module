@@ -1,0 +1,16 @@
+<?php
+
+function drupal_commerce_razorpay_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'commerce-payment-gateway-edit-form') {
+    drupal_add_library('system', 'jquery');
+    drupal_add_js(drupal_get_path('module', 'drupal_commerce_razorpay') . '/js/admin_script.js');
+  }
+}
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for the node edit form.
+ */
+function drupal_commerce_razorpay_form_node_edit_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  // Add the admin_script.js library to the edit-actions-submit element.
+  $form['actions']['submit']['#attached']['library'][] = 'drupal_commerce_razorpay/admin_script';
+}
+?>

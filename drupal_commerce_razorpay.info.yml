@@ -3,5 +3,8 @@ type: module
 description: Provides Commerce integration for the Razorpay Payments.
 core_version_requirement: ^8 || ^9 || ^10
 package: Commerce (contrib)
+libraries:
+  - core/jquery
 dependencies:
   - commerce:commerce_payment
+  - drupal:jquery

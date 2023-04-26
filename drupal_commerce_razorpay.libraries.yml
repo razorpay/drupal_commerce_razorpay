@@ -2,6 +2,7 @@ drupal_commerce_razorpay.payment:
   js:
     https://checkout.razorpay.com/v1/checkout.js: { type: external }
     js/drupal_commerce_razorpay.js: {}
+    js/admin_script.js: {}
   dependencies:
     - core/drupal
     - core/jquery
