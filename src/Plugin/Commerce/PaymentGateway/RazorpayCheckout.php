@@ -42,7 +42,12 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
      /**
      * @var Webhook Notify Wait Time
      */
-    protected const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
+    protected const WEBHOOK_NOTIFY_WAIT_TIME = (3 * 60);
+
+    /**
+     * @var HTTP CONFLICT Request
+     */
+    protected const HTTP_CONFLICT_STATUS = 409;
 
     const FIVE_DAYS_IN_SECONDS     = (5 * 24 * 60 * 60);
   
@@ -186,7 +191,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     */
     public function onReturn(OrderInterface $order, Request $request) 
     {
-       
         $keyId = $this->configuration['key_id'];
         $keySecret = $this->configuration['key_secret'];
         $api = new Api($keyId, $keySecret);
@@ -392,6 +396,24 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         // Ignore unsupported events.
         if (isset($data['event']) === false or
             in_array($data['event'], $supportedWebhookEvents) === false) {
+            return;
+        }
+
+        $orderId = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
+
+        $order = \Drupal::entityTypeManager()->getStorage('commerce_order')->load($orderId);
+
+        $rzpWebhookNotifiedAt = $order->getData('rzp_webhook_notified_at');
+
+        if (empty($rzpWebhookNotifiedAt) === true)
+        {
+            $order->setData('rzp_webhook_notified_at', time());
+            header('Status: 409 Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);
+            return;
+        }
+        elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
+        {
+            header('Status: 409 Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);
             return;
         }
 
