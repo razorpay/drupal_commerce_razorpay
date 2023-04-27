@@ -117,6 +117,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         if (empty($values['key_id']) || empty($values['key_secret']))
         {
+            \Drupal::logger('error')->error('Key Id and Key Secret are required.');
             return;
         }
 
@@ -167,6 +168,9 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         }
         catch (\Exception $exception)
         {
+            $validationErrorProperties = $this->triggerValidationInstrumentation(
+                ['error_message' => 'Invalid Key Id or Key Secret'], $key_id, $key_secret);
+
             $this->messenger()->addError($this->t('Invalid Key ID or Key Secret.'));
             $form_state->setError($form['key_id']);
             $form_state->setError($form['key_secret']);
@@ -226,6 +230,20 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         }
 
         $trackObject->rzpTrackDataLake($pluginStatusEvent, $pluginStatusProperties);
+    }
+
+    protected function triggerValidationInstrumentation($data, $key_id, $key_secret)
+    {
+        $properties = [
+            'page_url'            => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+            'field_type'          => 'text',
+            'field_name'          => 'key_id or key_secret'
+        ];
+
+        $properties = array_merge($properties, $data);
+
+        $trackObject = $this->newTrackPluginInstrumentation($key_id, $key_secret);
+        $trackObject->rzpTrackDataLake('formfield.validation.error', $properties);
     }
 
     public function newTrackPluginInstrumentation()
