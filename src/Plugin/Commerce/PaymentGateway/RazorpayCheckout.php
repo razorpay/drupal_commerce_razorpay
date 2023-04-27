@@ -31,7 +31,6 @@ use Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway\RazorpayInter
  */
 class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInterface
 {
-
     /**
      * Event constants
      */
@@ -48,16 +47,13 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
      * @var HTTP CONFLICT Request
      */
     protected const HTTP_CONFLICT_STATUS = 409;
-
-    const FIVE_DAYS_IN_SECONDS     = (5 * 24 * 60 * 60);
   
     /**
      * {@inheritdoc}
      */
     public function defaultConfiguration()
     {
-        return [
-                'key_id' => '',
+        return ['key_id' => '',
                 'key_secret' => '',
                 'payment_action' => [],
             ] + parent::defaultConfiguration();
@@ -370,6 +366,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         return new Api($key, $secret);
     }
+
     /**
     * {@inheritdoc}
     */
@@ -380,7 +377,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
           ])
         );
     }
-     /**
+
+    /**
     * {@inheritdoc}
     */
     public function onNotify(Request $request)
@@ -407,14 +405,12 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         if (empty($rzpWebhookNotifiedAt) === true)
         {
-            $order->setData('rzp_webhook_notified_at', time());
-            header('Status: 409 Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);
-            return;
+            $order->setData('rzp_webhook_notified_at', time())->save();
+            return new Response('Webhook conflicts due to early execution.', static::HTTP_CONFLICT_STATUS);
         }
         elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
         {
-            header('Status: 409 Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);
-            return;
+            return new Response('Webhook conflicts due to early execution.', static::HTTP_CONFLICT_STATUS);
         }
 
         $api = $this->getRazorpayApiInstance();
@@ -433,6 +429,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         {
             // Handle signature verification error
             \Drupal::logger('RazorpayWebhook')->error($exception->getMessage());
+            return new Response($exception->getMessage(), 401);
         }
      
         // Handle the webhook event based on the event type
@@ -444,32 +441,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         switch ($event)
         {
-        case self::PAYMENT_AUTHORIZED:
-                
-                $razorpayCreatedAt = $data['payload']['payment']['entity']['created_at'];
-
-                if ($razorpayCreatedAt > self::FIVE_DAYS_IN_SECONDS)
-                {
-                    $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
-                    $order = $order_storage->load($orderId);
-
-                    if (!$order)
-                        {
-                            \Drupal::logger('RazorpayWebhook')->info("Order not Found : ". $orderId);
-                
-                            return new Response('Order not found',  404);
-                        }
-
-                    $order->set('state', 'canceled');
-                    $order->save();
-                 
-                                
-                    \Drupal::logger('RazorpayWebhook')->info("Authorization expired for order ID: ". $orderId);
-
-                    exit;
-                    
-                }
-
+            case self::PAYMENT_AUTHORIZED:
                 $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
@@ -501,10 +473,10 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 $payment->save();
 
                 break;
-                 
-        case self::PAYMENT_FAILED:
-                 // Update the order status to "failed"
-                
+
+            case self::PAYMENT_FAILED:
+                // Update the order status to "failed"
+
                 $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
                 $order = $order_storage->load($orderId);
                 if (!$order)
@@ -520,17 +492,17 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                
                 \Drupal::logger('RazorpayWebhook')->info("Payment not Found for order ID: ". $orderId);
                  
-            break;
+                break;
 
             case self::REFUNDED_CREATED:
                 // Update the payment and order statuses to "refunded"
                                
                 $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $payments = $payment_storage->loadByProperties(['remote_id' => $paymentId]);
-                if (count($payments) !== 1) {
-                    
+                if (count($payments) !== 1)
+                {
                     \Drupal::logger('RazorpayWebhook')->info("Payment not Found : ". $paymentId);
-                  return new Response('Payment not found or multiple payments found', 404);
+                    return new Response('Payment not found or multiple payments found', 404);
                 }
                 $totalamt= ($data['payload']['payment']['entity']['amount'])/100;
 
