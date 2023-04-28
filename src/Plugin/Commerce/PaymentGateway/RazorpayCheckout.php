@@ -206,7 +206,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             $orderObject = $api->order->fetch($order->getData('razorpay_order_id'));
             $paymentObject = $orderObject->payments();
 
-            $status = $paymentObject['items'][0]->status; 
+            $status = end($paymentObject['items'])->status;
          
             $message = '';
             $remoteStatus = '';
