@@ -10,6 +10,7 @@ use Razorpay\Api\Api;
 use Drupal\drupal_commerce_razorpay\AutoWebhook;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Razorpay\Api\Errors\SignatureVerificationError;
 use Drupal\commerce_payment\Entity\PaymentInterface;
 use Drupal\commerce_price\Price;
@@ -31,12 +32,28 @@ use Drupal\drupal_commerce_razorpay\Plugin\Commerce\PaymentGateway\RazorpayInter
 class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInterface
 {
     /**
+     * Event constants
+     */
+    const PAYMENT_AUTHORIZED       = 'payment.authorized';
+    const PAYMENT_FAILED           = 'payment.failed';
+    const REFUNDED_CREATED         = 'refund.created';
+    
+     /**
+     * @var Webhook Notify Wait Time
+     */
+    protected const WEBHOOK_NOTIFY_WAIT_TIME = (3 * 60);
+
+    /**
+     * @var HTTP CONFLICT Request
+     */
+    protected const HTTP_CONFLICT_STATUS = 409;
+  
+    /**
      * {@inheritdoc}
      */
     public function defaultConfiguration()
     {
-        return [
-                'key_id' => '',
+        return ['key_id' => '',
                 'key_secret' => '',
                 'payment_action' => [],
             ] + parent::defaultConfiguration();
@@ -165,7 +182,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         $autoWebhook->autoEnableWebhook($values['key_id'], $values['key_secret']);
     }
 
-  /**
+    /**
     * {@inheritdoc}
     */
     public function onReturn(OrderInterface $order, Request $request) 
@@ -189,7 +206,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             $orderObject = $api->order->fetch($order->getData('razorpay_order_id'));
             $paymentObject = $orderObject->payments();
 
-            $status = $paymentObject['items'][0]->status; 
+            $status = end($paymentObject['items'])->status;
          
             $message = '';
             $remoteStatus = '';
@@ -349,6 +366,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         return new Api($key, $secret);
     }
+
     /**
     * {@inheritdoc}
     */
@@ -358,5 +376,166 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             '@gateway' => $this->getDisplayLabel(),
           ])
         );
+    }
+
+    /**
+    * {@inheritdoc}
+    */
+    public function onNotify(Request $request)
+    {
+        $supportedWebhookEvents = [
+            'payment.authorized',
+            'refund.created',
+            'payment.failed'
+        ];
+
+        $data = json_decode($request->getContent(), true);
+
+        // Ignore unsupported events.
+        if (isset($data['event']) === false or
+            in_array($data['event'], $supportedWebhookEvents) === false) {
+            return;
+        }
+
+        $orderId = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
+
+        $order = \Drupal::entityTypeManager()->getStorage('commerce_order')->load($orderId);
+
+        $rzpWebhookNotifiedAt = $order->getData('rzp_webhook_notified_at');
+
+        if (empty($rzpWebhookNotifiedAt) === true)
+        {
+            $order->setData('rzp_webhook_notified_at', time())->save();
+            return new Response('Webhook conflicts due to early execution.', static::HTTP_CONFLICT_STATUS);
+        }
+        elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
+        {
+            return new Response('Webhook conflicts due to early execution.', static::HTTP_CONFLICT_STATUS);
+        }
+
+        $api = $this->getRazorpayApiInstance();
+     
+        // Verify the webhook signature
+        $signature = $request->headers->get('X-Razorpay-Signature');
+
+        $config = \Drupal::config('drupal_commerce_razorpay.settings');
+        $webhook_secret = $config->get('razorpay_flags.webhook_secret');
+
+        try
+        {
+            $api->utility->verifyWebhookSignature($request->getContent(), $signature, $webhook_secret);
+        }
+        catch (\Exception $exception)
+        {
+            // Handle signature verification error
+            \Drupal::logger('RazorpayWebhook')->error($exception->getMessage());
+            return new Response($exception->getMessage(), 401);
+        }
+     
+        // Handle the webhook event based on the event type
+        $event = $data['event'];
+        
+        $orderId = $data['payload']['payment']['entity']['notes']['drupal_order_id'];
+
+        $paymentId = $data['payload']['payment']['entity']['id'];
+
+        switch ($event)
+        {
+            case self::PAYMENT_AUTHORIZED:
+
+                $orderStatus = $order->getState()->getId();
+
+                if ($orderStatus !== 'draft')
+                {
+                    return new Response('order is in ' . $orderStatus . 'state', 200);
+                }
+
+                $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
+                $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+
+                $razorpayPayment = $api->payment->fetch($razorpayPaymentId);
+
+                if ($razorpayPayment['status'] === 'captured')
+                {
+                    $state = 'completed';
+                }
+                else if ($razorpayPayment['status'] === 'authorized')
+                {
+                    $state = 'authorization';
+                }
+
+                $amount = Price::fromArray([
+                    'number' => ($data['payload']['payment']['entity']['amount'])/100,
+                    'currency_code' => $data['payload']['payment']['entity']['currency'],
+                ]);
+
+                $payment = $paymentStorage->create([
+                    'state' => $state,
+                    'amount' => $amount,
+                    'payment_gateway' => $this->entityId,
+                    'order_id' => $orderId,
+                    'remote_id' => $data['payload']['payment']['entity']['id'],
+                    'remote_state' => $data['payload']['payment']['entity']['status'],
+                    'authorized' => $this->time->getRequestTime(),
+                ]);
+                $payment->save();
+
+                break;
+
+            case self::PAYMENT_FAILED:
+                // Update the order status to "failed"
+
+                $order_storage = \Drupal::entityTypeManager()->getStorage('commerce_order');
+                $order = $order_storage->load($orderId);
+                if (!$order)
+                {
+                    \Drupal::logger('RazorpayWebhook')->info("Order not Found : ". $orderId);
+           
+                    return new Response('Order not found',  404);
+                }
+                $order->set('state', 'canceled');
+                $order->save();
+                 
+                 // Update the payment record in Drupal
+               
+                \Drupal::logger('RazorpayWebhook')->info("Payment not Found for order ID: ". $orderId);
+                 
+                break;
+
+            case self::REFUNDED_CREATED:
+                // Update the payment and order statuses to "refunded"
+                               
+                $payment_storage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
+                $payments = $payment_storage->loadByProperties(['remote_id' => $paymentId]);
+                if (count($payments) !== 1)
+                {
+                    \Drupal::logger('RazorpayWebhook')->info("Payment not Found : ". $paymentId);
+                    return new Response('Payment not found or multiple payments found', 404);
+                }
+                $totalamt= ($data['payload']['payment']['entity']['amount'])/100;
+
+                $amtRefund= ($data['payload']['payment']['entity']['amount_refunded'])/100;
+                
+                if($totalamt === $amtRefund)
+                {
+                    $state = 'refunded';
+                }
+                else
+                {
+                    $state = 'partially_refunded';
+                }
+                
+                $payment = reset($payments);
+                $payment->setState($state);
+                $refund_amount = new Price((string) $amtRefund, $payment->getAmount()->getCurrencyCode());
+                $payment->setRefundedAmount($refund_amount);
+                $payment->save();
+                
+                break;
+         }
+     
+         \Drupal::logger('RazorpayWebhook')->info("Webhook processed successfully for ". $event);
+                     
+         return new Response('Webhook processed successfully', 200);
     }
 }

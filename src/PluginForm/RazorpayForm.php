@@ -3,6 +3,7 @@
 namespace Drupal\drupal_commerce_razorpay\PluginForm;
 
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
+use Drupal\drupal_commerce_razorpay\AutoWebhook;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -16,6 +17,8 @@ class RazorpayForm extends BasePaymentOffsiteForm
     protected $payment;
     protected $config;
     protected $messenger;
+
+    protected const TWELVE_HOURS = 86400;
 
     /**
      * Given drupal order and other required values
@@ -71,7 +74,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
                     'currency'        => $orderData['currency'],
                     'payment_capture' => ($orderData['payment_action'] === 'authorize') ? 0 : 1,
                     'notes'           => [
-                        'drupal_order_number'  => (string) $order->id(),
+                        'drupal_order_id'  => (string) $order->id(),
                     ],
                 ];
 
@@ -209,6 +212,25 @@ class RazorpayForm extends BasePaymentOffsiteForm
         // Attach library.
         $form['#attached']['library'][] = 'drupal_commerce_razorpay/drupal_commerce_razorpay.payment';
         $form['#attached']['drupalSettings']['razorpay_checkout_data'] = $checkoutArgs;
+
+        try
+        {
+            $configFactory = \Drupal::configFactory();
+            $configFlags = $configFactory->getEditable('drupal_commerce_razorpay.settings');
+            $settingFlags = $configFlags->get('razorpay_flags');
+            $webhookEnableAt = $settingFlags['webhook_enable_at'];
+
+            if (empty($webhookEnableAt) === true or
+                ($webhookEnableAt + static::TWELVE_HOURS) < time())
+            {
+                $autoWebhook = new AutoWebhook();
+                $autoWebhook->autoEnableWebhook($this->config['key_id'], $this->config['key_secret']);
+            }
+        }
+        catch (\Exception $exception)
+        {
+            \Drupal::logger('RazorpayAutoWebhook')->error($exception->getMessage());
+        }
 
         return $form;
     }

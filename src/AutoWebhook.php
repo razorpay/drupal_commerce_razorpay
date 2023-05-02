@@ -9,12 +9,14 @@ class AutoWebhook
 {
     protected $supportedWebhookEvents = [
         'payment.authorized' => true,
-        'refund.created' => true
+        'payment.failed'     => true,
+        'refund.created'     => true
     ];
 
     protected $defaultWebhookEvents = [
         'payment.authorized' => true,
-        'refund.created' => true
+        'payment.failed'     => true,
+        'refund.created'     => true
     ];
 
     protected function generateWebhookSecret()
