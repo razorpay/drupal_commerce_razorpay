@@ -442,6 +442,14 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         switch ($event)
         {
             case self::PAYMENT_AUTHORIZED:
+
+                $orderStatus = $order->getState()->getId();
+
+                if ($orderStatus !== 'draft')
+                {
+                    return new Response('order is in ' . $orderStatus . 'state', 200);
+                }
+
                 $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
                 $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
