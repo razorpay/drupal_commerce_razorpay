@@ -28,4 +28,3 @@ function drupal_commerce_razorpay_page_attachments(array &$attachments)
         $attachments['#attached']['library'][] = 'drupal_commerce_razorpay/admin_styling';
     }
 }
-​

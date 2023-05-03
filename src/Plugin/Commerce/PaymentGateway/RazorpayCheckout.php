@@ -73,22 +73,15 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         // $form['display_label']['#prefix'] = 'First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal" target="_blank">signup</a> for a Razorpay account or
         //     <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal" target="_blank">login</a> if you have an existing account.</p>';
         
-        $linkText = '<span class="fa fa-angle-left"></span>'.$this->t('signup');
-
-        $form['signup']= [
-            '#type' => 'link',
-            '#title' => Markup::create($linkText),
-            '#description' => $this->t('First signup for a Razorpay account'),
-            '#url' => 'https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal',
+        $form['signup'] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
             '#attributes' => [
-                'target' => '_blank'
+                'onclick'=>'rzpSignupClicked();'
             ],
+            '#value' => $this->t('First <a href=":signup_url" target="_blank">Signup</a> for a Razorpay account.',
+                [':signup_url' => 'https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal']),
         ];
-
-        // $signup_link = Link::fromTextAndUrl('signup',
-        // Url::fromUri('https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal'), ['attributes' => ['id' => 'signup-link']]);
-        // $login_link = Link::fromTextAndUrl('login', Url::fromUri('https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal'), ['attributes' => ['id' => 'login-link']]);
-        // $form['display_label']['#prefix'] = 'First ' . $signup_link->toString() . ' for a Razorpay account or ' . $login_link->toString() . ' if you have an existing account.</p>';
 
         $form['key_id'] = [
             '#type' => 'textfield',
