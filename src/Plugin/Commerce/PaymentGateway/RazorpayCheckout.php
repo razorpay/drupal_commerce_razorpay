@@ -493,12 +493,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
            
                     return new Response('Order not found',  404);
                 }
-                $order->set('state', 'canceled');
-                $order->save();
-                 
-                 // Update the payment record in Drupal
-               
-                \Drupal::logger('RazorpayWebhook')->info("Payment not Found for order ID: ". $orderId);
+
+                \Drupal::logger('RazorpayWebhook')->info("Payment Failed for order ID: ". $orderId);
                  
                 break;
 
