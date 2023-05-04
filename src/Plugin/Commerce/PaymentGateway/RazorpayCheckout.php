@@ -157,6 +157,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         if (substr($values['key_id'], 0, 8) !== 'rzp_' . $values['mode'])
         {
+            $validationErrorProperties = $this->triggerValidationInstrumentation(
+                ['error_message' => 'Invalid Key Id or Key Secret'], $key_id, $key_secret);
             $this->messenger()->addError($this->t('Invalid Key ID or Key Secret for ' . $values['mode'] . ' mode.'));
             $form_state->setError($form['mode']);
 
