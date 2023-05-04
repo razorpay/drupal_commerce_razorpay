@@ -146,8 +146,11 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         $values = $form_state->getValue($form['#parents']);
 
-        if (empty($values['key_id']) || empty($values['key_secret']))
+        if (empty($values['key_id']) or empty($values['key_secret']))
         {
+            $validationErrorProperties = $this->triggerValidationInstrumentation(
+                ['error_message' => 'Key Id and or Key Secret is null'], $key_id);
+
             \Drupal::logger('error')->error('Key Id and Key Secret are required.');
             return;
         }
