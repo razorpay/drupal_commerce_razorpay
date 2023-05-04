@@ -6,3 +6,6 @@ drupal_commerce_razorpay.payment:
     - core/drupal
     - core/jquery
     - core/once
+admin_styling:
+  js:
+    js/admin-script.js: {}
