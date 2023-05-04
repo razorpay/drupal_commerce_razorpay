@@ -66,7 +66,7 @@ class AutoWebhook
                 ['absolute' => TRUE]
             )->toString();
 
-            if($key_id == null || $key_secret == null)
+            if($key_id == null or $key_secret == null)
             {
                 $validationErrorProperties = $this->triggerValidationInstrumentation(
                     ['error_message' => 'Key Id and or Key Secret is null'], $key_id);
