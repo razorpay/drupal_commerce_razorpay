@@ -40,6 +40,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     {
         return [
                 'signup' => 'https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal',
+                'login' => 'https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal',
                 'key_id' => '',
                 'key_secret' => '',
                 'payment_action' => [],
@@ -69,9 +70,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     public function buildConfigurationForm(array $form, FormStateInterface $form_state)
     {
         $form = parent::buildConfigurationForm($form, $form_state);
-
-        // $form['display_label']['#prefix'] = 'First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal" target="_blank">signup</a> for a Razorpay account or
-        //     <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal" target="_blank">login</a> if you have an existing account.</p>';
         
         $form['signup'] = [
             '#type' => 'html_tag',
@@ -81,6 +79,16 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             ],
             '#value' => $this->t('First <a href=":signup_url" target="_blank">Signup</a> for a Razorpay account.',
                 [':signup_url' => 'https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal']),
+        ];
+
+        $form['login'] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
+            '#attributes' => [
+                'onclick'=>'rzpLoginClicked();'
+            ],
+            '#value' => $this->t('<a href=":login_url" target="_blank">Login</a> if you have an existing account.',
+                [':login_url' => 'https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal']),
         ];
 
         $form['key_id'] = [
