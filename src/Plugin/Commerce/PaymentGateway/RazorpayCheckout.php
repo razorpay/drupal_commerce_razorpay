@@ -97,6 +97,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             '#description' => $this->t('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.'),
             '#default_value' => $this->configuration['key_id'],
             '#required' => TRUE,
+            '#attributes' => ['id' => 'drupal_razorpay_key_id']
         ];
 
         $form['key_secret'] = [
@@ -105,6 +106,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             '#description' => $this->t('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.'),
             '#default_value' => $this->configuration['key_secret'],
             '#required' => TRUE,
+            '#attributes' => ['id' => 'drupal_razorpay_key_secret']
         ];
 
         $form['payment_action'] = [
