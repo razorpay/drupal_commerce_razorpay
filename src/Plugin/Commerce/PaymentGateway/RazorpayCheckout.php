@@ -247,7 +247,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 'payment_gateway' => $this->entityId,
                 'order_id' => $order->id(),
                 'test' => $this->getMode() == 'test',
-                'remote_id' => $paymentObject['items'][0]->id,
+                'remote_id' => end($paymentObject['items'])->id,
                 'remote_state' => $remoteStatus ? $remoteStatus : $request->get('payment_status'),
                 'authorized' => $requestTime,
                 ]
