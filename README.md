@@ -8,8 +8,8 @@ This extension utilizes Razorpay API and provides seamless integration with Drup
 2. To Upload module Go to Drupal admin dashboard click Extend -> Add new module -> choose file -> continue.
 3. To install module click extend search for razorpay module, select checkbox and click install button.
 
-Dependencies
-============
+### Dependencies
+
 This module requires:
 
 * drupal 10.*
@@ -29,6 +29,6 @@ This module requires:
 
 Visit [https://razorpay.com](https://razorpay.com) for support requests or email contact@razorpay.com.
 
-LICENSE
-=======
+### License
+
 See the [LICENSE](https://github.com/razorpay/payment_button_drupal_plugin/tree/master/LICENSE.txt) file for the complete LICENSE text.
