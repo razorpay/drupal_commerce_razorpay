@@ -1,0 +1,16 @@
+drupal_commerce_razorpay.capturePayment:
+  path: '/capturePayment'
+  defaults:
+    _controller: '\Drupal\drupal_commerce_razorpay\Controller\RzpController::capturePayment'
+  requirements:
+    _access: 'TRUE'
+      #@TODO to be changed later.
+      # Needs to be accessed by an anonymous user.
+drupal_commerce_razorpay.ipn_handler:
+  path: '/payment/ipn-handler'
+  defaults:
+    _controller: '\Drupal\drupal_commerce_razorpay\Controller\IPNController::handleIPN'
+    _title: 'IPN Handler'
+  methods: [POST]
+  requirements:
+    _csrf_token: 'TRUE'

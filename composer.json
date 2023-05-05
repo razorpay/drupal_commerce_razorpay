@@ -1,0 +1,13 @@
+{
+  "name": "drupal/drupal_commerce_razorpay",
+  "type": "drupal-module",
+  "description": "Provides Commerce integration for Razorpay.",
+  "keywords": ["Drupal"],
+  "minimum-stability": "dev",
+  "homepage": "http://drupal.org/project/drupal_commerce_razorpay",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "drupal/commerce": "^2.19 || ^3",
+    "razorpay/razorpay": "^2.8"
+  }
+}
