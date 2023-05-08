@@ -1,23 +1,27 @@
-document.addEventListener("focusout", function (event) {
-    if(event.target.matches("#drupal_razorpay_key_id")) {
+document.addEventListener("focusout", function (event) 
+{
+    if(event.target.matches("#drupal_razorpay_key_id")) 
+    {
         var data = {
             'plugin_name': 'drupal',
-			'event' : 'formfield.interacted',
+            'event' : 'formfield.interacted',
             'page_url' : window.location.href,
             'field_type' : 'string',
             'field_name' : 'drupal_razorpay_key_id'
 		};
+
         rzpFetch(data);
     }
 
     if(event.target.matches("#drupal_razorpay_key_secret")) {
         var data = {
             'plugin_name': 'drupal',
-			'event' : 'formfield.interacted',
+            'event' : 'formfield.interacted',
             'page_url' : window.location.href,
             'field_type' : 'string',
             'field_name' : 'drupal_razorpay_key_secret'
 		};
+
         rzpFetch(data);
     }
 })
@@ -40,10 +44,10 @@ function rzpFetch(data) {
     };
 
     fetch('https://lumberjack.stage.razorpay.in/v1/track', {method: 'post',
-                                                                  body: JSON.stringify(body),
-                                                                  headers: {
-                                                                  },
-                                                                });
+                                                            body: JSON.stringify(body),
+                                                            headers: {
+                                                                },
+        });
 }
 
 function rzpSignupClicked()

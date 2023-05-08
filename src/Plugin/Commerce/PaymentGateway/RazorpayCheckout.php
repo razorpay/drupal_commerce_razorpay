@@ -131,7 +131,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             '#default_value' => $this->configuration['payment_action'],
         ];
 
-
         return $form;
     }
 
