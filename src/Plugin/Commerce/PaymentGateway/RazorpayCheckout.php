@@ -176,7 +176,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         $authProperties = [
             'is_key_id_populated'     => true,
             'is_key_secret_populated' => true,
-            'page_url'                => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
+            'page_url'                => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
             'auth_successful_status'  => true,
             'is_plugin_activated'     => $status
         ];
