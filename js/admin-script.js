@@ -8,7 +8,7 @@ document.addEventListener("focusout", function (event)
             'page_url' : window.location.href,
             'field_type' : 'string',
             'field_name' : 'drupal_razorpay_key_id'
-		};
+        };
 
         rzpFetch(data);
     }
@@ -20,7 +20,7 @@ document.addEventListener("focusout", function (event)
             'page_url' : window.location.href,
             'field_type' : 'string',
             'field_name' : 'drupal_razorpay_key_secret'
-		};
+        };
 
         rzpFetch(data);
     }
