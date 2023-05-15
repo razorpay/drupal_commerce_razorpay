@@ -9,12 +9,11 @@
 
 function drupal_commerce_razorpay_install() {
     $trackObject = new TrackPluginInstrumentation();
-    $trackObject->razorpayPluginActivated();
+    $trackObject->razorpayPluginInstall();
 }
 
 function drupal_commerce_razorpay_uninstall() {
     // Clear razorpay data out of the cache.
     $trackObject = new TrackPluginInstrumentation();
-    $trackObject->razorpayPluginDeactivated();
-    \Drupal::cache('data')->deleteAll();
+    $trackObject->razorpayPluginUninstall();
 }

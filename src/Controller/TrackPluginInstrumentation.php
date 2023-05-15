@@ -4,11 +4,8 @@ namespace Drupal\drupal_commerce_razorpay\Controller;
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
-use Drupal\Core\Http\ClientFactory;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Response;
-use Drupal\Core\Extension\ModuleInstaller;
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
 use GuzzleHttp\Client;
 
@@ -24,7 +21,7 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         $this->mode = (substr($key, 0, 8) === 'rzp_live') ? 'live' : 'test';
     }
 
-    function razorpayPluginActivated()
+    function razorpayPluginInstall()
     {
         $activateProperties = [
             'page_url'            => $_SERVER['HTTP_REFERER'],
@@ -35,7 +32,7 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         return 'success';
     }
 
-    function razorpayPluginDeactivated()
+    function razorpayPluginUninstall()
     {
         $isTransactingUser = false;
         
