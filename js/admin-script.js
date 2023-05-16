@@ -2,9 +2,6 @@ document.addEventListener("focusout", function (event)
 {
     if(event.target.matches("#drupal_razorpay_key_id") || event.target.matches("#drupal_razorpay_key_secret")) 
     {
-
-        let text = document.querySelector('#drupal_razorpay_key_id').value;
-        let mode = text.substr(0, 8) == "rzp_live"?'live':'test';
         var data = {
             'plugin_name': 'drupal',
             'event' : 'formfield.interacted',
@@ -13,12 +10,16 @@ document.addEventListener("focusout", function (event)
             'field_name' : event.target.id
         };
 
-        rzpFetch(data, mode);
+        rzpFetch(data);
     }
 })
 
-function rzpFetch(data, mode = "test") 
+function rzpFetch(data) 
 {
+    let text = document.querySelector('#drupal_razorpay_key_id').value;
+
+    var mode = text.substr(0, 8) == "rzp_test"?'test':'live';
+
     var body = {
         mode: mode,
         key: "2Ea4C263F7bb3f3AF7630DC5db9e38ff",
