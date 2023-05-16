@@ -56,30 +56,6 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         return 'success';
     }
 
-    function razorpayPaymentDeleted()
-    {
-        $isTransactingUser = false;
-        
-        $query = \Drupal::database()->query("SELECT order_number FROM commerce_order WHERE payment_gateway = :gateway",[':gateway' => 'razorpay']);
-        
-        $data = $query->fetchField();
-
-        if (empty($data) === false and
-            ($data == null) === false)
-        {
-            $isTransactingUser = true;
-        }
-
-        $deactivateProperties = [
-            'page_url'            => $_SERVER['HTTP_REFERER'],
-            'is_transacting_user' => $isTransactingUser
-        ];
-
-        $this->rzpTrackDataLake('plugin payment deleted', $deactivateProperties);
-
-        return 'success';
-    }
-
     public function rzpTrackDataLake($event, $properties)
     {
         try

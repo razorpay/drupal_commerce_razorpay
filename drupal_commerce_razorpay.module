@@ -25,6 +25,6 @@ function drupal_commerce_razorpay_entity_delete(EntityInterface $entity) {
     if (empty($data))
     {
         $trackObject = new TrackPluginInstrumentation();
-        $trackObject->razorpayPaymentDeleted();
+        $trackObject->razorpayPluginUninstall();
     }
 }
