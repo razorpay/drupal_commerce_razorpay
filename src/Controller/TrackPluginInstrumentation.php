@@ -6,6 +6,7 @@ use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Yaml\Yaml;
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
 use GuzzleHttp\Client;
 
@@ -114,10 +115,18 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
 
     public function getDefaultProperties($timestamp = true)
     {
+        $commercePath = \Drupal::service('extension.path.resolver')->getPath('module', 'commerce') . "/commerce.info.yml";
+        $commerceInfo = Yaml::parse(file_get_contents($commercePath));
+
+        // $rzpModulePath = \Drupal::service('extension.path.resolver')->getPath('module', 'drupal_commerce_razorpay') . "/drupal_commerce_razorpay.info.yml";
+        // $rzpModuleInfo = Yaml::parse(file_get_contents($rzpModulePath));
+
         $defaultProperties = [
             'platform'            => 'Drupal',
             'platform_version'    => \Drupal::VERSION,
-            'plugin_name'         => 'drupal_commerce_razorpay',
+            'commerce_version'    => $commerceInfo['version'],
+            'plugin_name'         => $rzpModuleInfo['name'],
+            // 'plugin_version'      => $rzpModuleInfo['version'],
             'unique_id'           => $_SERVER['HTTP_HOST']
         ];
 
