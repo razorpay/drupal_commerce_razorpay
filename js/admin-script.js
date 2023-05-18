@@ -35,11 +35,14 @@ function rzpFetch(data)
         ]
     };
 
-    fetch('https://lumberjack.stage.razorpay.in/v1/track', {method: 'post',
-                                                            body: JSON.stringify(body),
-                                                            headers: {
-                                                                },
-        });
+    fetch('https://lumberjack.stage.razorpay.in/v1/track', 
+        {
+            method: 'post',
+            body: JSON.stringify(body),
+            headers: {
+            },
+        }
+    );
 }
 
 function rzpSignupClicked()
@@ -48,7 +51,7 @@ function rzpSignupClicked()
         'plugin_name': 'drupal',
         'event' : 'signup.initiated',
         'next_page_url' : 'https://easy.razorpay.com/onboarding/?recommended_product=payment_gateway&source=drupal'
-	};
+    };
 
     rzpFetch(data);
 }
@@ -59,7 +62,7 @@ function rzpLoginClicked()
         'plugin_name': 'drupal',
         'event' : 'login.initiated',
         'next_page_url' : 'https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal'
-	};
+    };
 
     rzpFetch(data);
 }
