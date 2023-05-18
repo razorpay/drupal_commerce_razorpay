@@ -18,7 +18,7 @@ function rzpFetch(data)
 {
     let text = document.querySelector('#drupal_razorpay_key_id').value;
 
-    var mode = text.substr(0, 8) == "rzp_test"?'test':'live';
+    var mode = text.substr(0, 8) === "rzp_test" ? 'test' : 'live';
 
     var body = {
         mode: mode,
