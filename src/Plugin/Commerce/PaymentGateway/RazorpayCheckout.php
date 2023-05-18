@@ -86,9 +86,16 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         $form['signup'] = [
             '#type' => 'html_tag',
             '#tag' => 'div',
-            '#value' => $this->t('First <a href=":signup_url" target="_blank" onclick=":signup">signup</a> for a Razorpay account or 
+            '#value' => $this->t(
+                'First <a href=":signup_url" target="_blank" onclick=":signup">signup</a> for a Razorpay account or 
                 <a href=":login_url" target="_blank" onclick=":login">login</a> if you have an existing account.',
-                [':signup_url' => 'https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal', ':signup' => 'rzpSignupClicked();', ':login_url' => 'https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal', ':login' => 'rzpLoginClicked();']),
+                [
+                    ':signup_url' => 'https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=drupal', 
+                    ':signup' => 'rzpSignupClicked();', 
+                    ':login_url' => 'https://dashboard.razorpay.com/signin?screen=sign_in&source=drupal', 
+                    ':login' => 'rzpLoginClicked();'
+                ]
+            ),
         ];
 
         $form['key_id'] = [
