@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the entity_test module.
+ */
+
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
+
+function drupal_commerce_razorpay_install() 
+{
+    $trackObject = new TrackPluginInstrumentation();
+    $trackObject->razorpayPluginInstall();
+}
+
+function drupal_commerce_razorpay_uninstall() 
+{
+    $trackObject = new TrackPluginInstrumentation();
+    $trackObject->razorpayPluginUninstall();
+}

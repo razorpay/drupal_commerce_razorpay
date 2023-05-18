@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_commerce_razorpay;
 
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
 use Razorpay\Api\Api;
 use Drupal\Core\Url;
 
@@ -111,15 +112,28 @@ class AutoWebhook
                     }
                 }
             }
+
+            $webhookProperties = [
+                'page_url'       => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                'prev_page_url'  => $_SERVER['HTTP_REFERER'],
+                'events_selected'     => $this->defaultWebhookEvents,
+            ];
+
             if ($webhookExist)
             {
                 //updating webhook
+                $trackObject = $this->newTrackPluginInstrumentation($key_id, $key_secret);
+                $trackObject->rzpTrackDataLake('autowebhook.updated', $webhookProperties);
+
                 \Drupal::logger('RazorpayAutoWebhook')->info('Updating razorpay webhook');
                 return $api->webhook->edit($requestBody, $webhookId);
             }
             else
             {
                 //creating webhook
+                $trackObject = $this->newTrackPluginInstrumentation($key_id, $key_secret);
+                $trackObject->rzpTrackDataLake('autowebhook.created', $webhookProperties);
+
                 \Drupal::logger('RazorpayAutoWebhook')->info('Creating razorpay webhook');
                 return $api->webhook->create($requestBody);
             }
@@ -129,5 +143,13 @@ class AutoWebhook
             \Drupal::messenger()->addError(t('RazorpayAutoWebhook: ' . $exception->getMessage()));
             \Drupal::logger('RazorpayAutoWebhook')->error($exception->getMessage());
         }
+    }
+
+    public function newTrackPluginInstrumentation($key_id, $key_secret)
+    {
+        $api = new Api($key_id, $key_secret);
+        $key = $key_id;
+
+        return new TrackPluginInstrumentation($api, $key);
     }
 }
