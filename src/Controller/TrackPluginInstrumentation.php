@@ -84,7 +84,7 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
                 'body'      => json_encode(
                     [
                         'mode'   => $this->mode,
-                        'key'    => '2Ea4C263F7bb3f3AF7630DC5db9e38ff',
+                        'key'    => '0c08FC07b3eF5C47Fc19B6544afF4A98',
                         'events' => [
                             [
                                 'event_type'    => 'plugin-events',
