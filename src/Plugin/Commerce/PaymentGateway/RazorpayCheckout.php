@@ -264,7 +264,6 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         {
             $pluginStatusEvent = 'plugin enabled';
         }
-
         else
         {
             $pluginStatusEvent = 'plugin disabled';

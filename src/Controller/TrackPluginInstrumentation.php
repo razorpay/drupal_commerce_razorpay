@@ -155,10 +155,12 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         {
             $guzzleResponse = $client->request('POST', 'https://lumberjack.stage.razorpay.in/v1/track', $data);
 
-            if ($guzzleResponse->getStatusCode() == 200) {
+            if ($guzzleResponse->getStatusCode() == 200) 
+            {
                 $response = $guzzleResponse->getBody()->getContents();
             }
-        } catch (\GuzzleHttp\Exception\RequestException $e) 
+        } 
+        catch (\GuzzleHttp\Exception\RequestException $e) 
         {
             \Drupal::logger('error')->error($e->getMessage());
         }
