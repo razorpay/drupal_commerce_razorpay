@@ -1,0 +1,15 @@
+<?php
+
+use Drupal\drupal_commerce_razorpay\Controller\TrackPluginInstrumentation;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_page_attachments().
+ */
+function drupal_commerce_razorpay_page_attachments(array &$attachments)
+{
+    if (\Drupal::service('router.admin_context')->isAdminRoute())
+    {
+        $attachments['#attached']['library'][] = 'drupal_commerce_razorpay/admin_styling';
+    }
+}
