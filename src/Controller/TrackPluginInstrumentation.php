@@ -28,6 +28,7 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
             'page_url'            => $_SERVER['HTTP_REFERER'],
             'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']
         ];
+
         $this->rzpTrackDataLake('plugin activate', $activateProperties);
 
         return 'success';
@@ -37,7 +38,9 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
     {
         $isTransactingUser = false;
         
-        $query = \Drupal::database()->query("SELECT order_number FROM commerce_order WHERE payment_gateway = :gateway",[':gateway' => 'razorpay']);
+        $query = \Drupal::database()->query("SELECT order_number FROM commerce_order WHERE payment_gateway = :gateway",
+            [':gateway' => 'razorpay']
+        );
         
         $data = $query->fetchField();
 
@@ -148,13 +151,15 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
 
         $response = '';
 
-        try {
+        try 
+        {
             $guzzleResponse = $client->request('POST', 'https://lumberjack.stage.razorpay.in/v1/track', $data);
 
             if ($guzzleResponse->getStatusCode() == 200) {
                 $response = $guzzleResponse->getBody()->getContents();
             }
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
+        } catch (\GuzzleHttp\Exception\RequestException $e) 
+        {
             \Drupal::logger('error')->error($e->getMessage());
         }
 

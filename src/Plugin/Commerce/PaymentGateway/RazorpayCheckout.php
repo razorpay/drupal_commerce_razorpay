@@ -146,7 +146,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
         $values = $form_state->getValue($form['#parents']);
 
-        if (empty($values['key_id']) or empty($values['key_secret']))
+        if (empty($values['key_id']) or 
+            empty($values['key_secret']))
         {
             $validationErrorProperties = $this->triggerValidationInstrumentation(
                 ['error_message' => 'Key Id and or Key Secret is null'], $key_id);
@@ -181,7 +182,8 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             'is_plugin_activated'     => $status
         ];
 
-        if(empty($data['configuration']['key_id']) and empty($data['configuration']['key_secret']))
+        if (empty($data['configuration']['key_id']) and 
+            empty($data['configuration']['key_secret']))
         {
             $authEvent = 'saving auth details';
         }
@@ -197,9 +199,11 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         try
         {
             $api = new Api($values['key_id'], $values['key_secret']);
+
             $options = [
                 'count' => 1
             ];
+
             $orders = $api->order->all($options);
         }
         catch (\Exception $exception)
@@ -237,9 +241,10 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
         $status = $form_state->cleanValues()->getValues($form['#parents'])['status'];
         
         $isTransactingUser = false;
-        
-        $query = \Drupal::database()->query("SELECT order_number FROM commerce_order WHERE payment_gateway = :gateway",[':gateway' => 'razorpay']);
-        
+
+        $query = \Drupal::database()->query("SELECT order_number FROM commerce_order WHERE payment_gateway = :gateway",
+            [':gateway' => 'razorpay']);
+
         $data = $query->fetchField();
 
         if (empty($data) === false and
@@ -255,7 +260,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
             'is_transacting_user' => $isTransactingUser
         ];
 
-        if($status)
+        if ($status)
         {
             $pluginStatusEvent = 'plugin enabled';
         }
