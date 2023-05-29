@@ -121,8 +121,8 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         $commercePath = \Drupal::service('extension.path.resolver')->getPath('module', 'commerce') . "/commerce.info.yml";
         $commerceInfo = Yaml::parse(file_get_contents($commercePath));
 
-        // $rzpModulePath = \Drupal::service('extension.path.resolver')->getPath('module', 'drupal_commerce_razorpay') . "/drupal_commerce_razorpay.info.yml";
-        // $rzpModuleInfo = Yaml::parse(file_get_contents($rzpModulePath));
+        $rzpModulePath = \Drupal::service('extension.path.resolver')->getPath('module', 'drupal_commerce_razorpay') . "/drupal_commerce_razorpay.info.yml";
+        $rzpModuleInfo = Yaml::parse(file_get_contents($rzpModulePath));
 
         $defaultProperties = [
             'platform'            => 'Drupal',
