@@ -618,9 +618,9 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
                 $payment = $paymentStorage->load(reset($paymentIds));
 
-                // Ignore completed payments.
-                if ($payment->getState()->getId() !== 'completed' ||
-                    $amount->lessThan($payment->getAmount()))
+                // Ignore completed and amount mismatch payments
+                if ($payment->getState()->getId() !== 'completed' and
+                    $amount->equals($payment->getAmount()))
                 {
                     $payment->setAmount($amount);
                     $payment->setState('completed');
@@ -676,7 +676,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 
                 break;
          }
-     
+
          \Drupal::logger('RazorpayWebhook')->info("Webhook processed successfully for ". $event);
                      
          return new Response('Webhook processed successfully', 200);
