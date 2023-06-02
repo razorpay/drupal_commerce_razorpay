@@ -36,6 +36,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
      * Event constants
      */
     const PAYMENT_AUTHORIZED       = 'payment.authorized';
+    const PAYMENT_CAPTURED         = 'payment.captured';
     const PAYMENT_FAILED           = 'payment.failed';
     const REFUNDED_CREATED         = 'refund.created';
     
@@ -497,6 +498,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
     {
         $supportedWebhookEvents = [
             'payment.authorized',
+            'payment.captured',
             'refund.created',
             'payment.failed'
         ];
@@ -594,6 +596,39 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
 
                 break;
 
+            case self::PAYMENT_CAPTURED:
+                $paymentStorage = \Drupal::entityTypeManager()->getStorage('commerce_payment');
+
+                $amount = Price::fromArray([
+                    'number' => ($data['payload']['payment']['entity']['amount'])/100,
+                    'currency_code' => $data['payload']['payment']['entity']['currency'],
+                ]);
+
+                $paymentIds = $paymentStorage->getQuery()
+                    ->condition('order_id', $orderId)
+                    ->accessCheck(FALSE)
+                    ->sort('payment_id', 'DESC')
+                    ->range(0, 1)
+                    ->execute();
+
+                if (!$paymentIds)
+                {
+                    return new Response('Could not find a payment transaction in Drupal for the order ID:' . $orderId, 200);
+                }
+
+                $payment = $paymentStorage->load(reset($paymentIds));
+
+                // Ignore completed and amount mismatch payments
+                if ($payment->getState()->getId() !== 'completed' and
+                    $amount->equals($payment->getAmount()))
+                {
+                    $payment->setAmount($amount);
+                    $payment->setState('completed');
+                    $payment->save();
+                }
+
+                break;
+
             case self::PAYMENT_FAILED:
                 // Update the order status to "failed"
 
@@ -641,7 +676,7 @@ class RazorpayCheckout extends OffsitePaymentGatewayBase implements RazorpayInte
                 
                 break;
          }
-     
+
          \Drupal::logger('RazorpayWebhook')->info("Webhook processed successfully for ". $event);
                      
          return new Response('Webhook processed successfully', 200);
