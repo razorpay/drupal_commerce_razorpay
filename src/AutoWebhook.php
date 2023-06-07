@@ -22,7 +22,7 @@ class AutoWebhook
         'refund.created'     => true
     ];
 
-    protected function generateWebhookSecret()
+    public function generateWebhookSecret()
     {
         $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
 

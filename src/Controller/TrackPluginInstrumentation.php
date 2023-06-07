@@ -22,7 +22,7 @@ class TrackPluginInstrumentation extends BasePaymentOffsiteForm
         $this->mode = (substr($key, 0, 8) === 'rzp_live') ? 'live' : 'test';
     }
 
-    function razorpayPluginInstall()
+    public function razorpayPluginInstall()
     {
         $activateProperties = [
             'page_url'            => $_SERVER['HTTP_REFERER'],
