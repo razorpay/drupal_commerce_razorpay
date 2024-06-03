@@ -33,6 +33,15 @@ class RazorpayForm extends BasePaymentOffsiteForm
     {
         $create = false;
 
+        if ($orderData['currency'] === "KWD" or
+            $orderData['currency'] === "OMR" or
+            $orderData['currency'] === "BHD")
+        {
+            \Drupal::logger('RazorpayCheckoutForm')->error($orderData['currency'] . " currency is not supported at the moment.");
+
+            return "error";
+        }
+
         try
         {
             $razorpayOrderId = $order->getData('razorpay_order_id');
