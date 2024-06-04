@@ -20,6 +20,12 @@ class RazorpayForm extends BasePaymentOffsiteForm
 
     protected const TWELVE_HOURS = 86400;
 
+    const CURRENCY_NOT_ALLOWED = [
+        'KWD',
+        'OMR',
+        'BHD'
+    ];
+
     /**
      * Given drupal order and other required values
      * to find the associated Razorpay Order using
@@ -33,9 +39,7 @@ class RazorpayForm extends BasePaymentOffsiteForm
     {
         $create = false;
 
-        if ($orderData['currency'] === "KWD" or
-            $orderData['currency'] === "OMR" or
-            $orderData['currency'] === "BHD")
+        if (in_array($orderData['currency'], static::CURRENCY_NOT_ALLOWED) === true)
         {
             \Drupal::logger('RazorpayCheckoutForm')->error($orderData['currency'] . " currency is not supported at the moment.");
 
